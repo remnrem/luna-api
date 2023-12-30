@@ -47,6 +47,13 @@ g++ -O3 -Wall -shared -std=c++17 -fPIC \
 
 ### Docker
 
+Based on the image:
+
+```
+https://jupyter-docker-stacks.readthedocs.io/en/latest/
+```
+
+
 
 ```
 docker build -t lunapi .
