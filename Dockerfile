@@ -49,20 +49,30 @@ RUN mkdir /data \
  && unzip tutorial.zip \
  && rm tutorial.zip
 
-WORKDIR /build
+RUN cd /home/jovyan/ \
+  && pip install pybind11 
 
 ENV LD_LIBRARY_PATH=/usr/local/lib/
 
+# force rebuild of lunapi below
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
-RUN  g++ -O3 -Wall -shared -std=c++17 -fPIC $(python3 -m pybind11 --includes) lp.cpp  `python3-config --ldflags`  \
- -I../luna-base/ -I../luna-base/stats \
- -o lp$(python3-config --extension-suffix) \
- ../luna-base/libluna.a ../LightGBM/lib_lightgbm.a -lz -lfftw3	
+RUN cd /build \
+ && git clone https://github.com/remnrem/luna-api.git \
+ && cd luna-api \
+ && g++ -O3 -Wall -shared -std=c++17 -fPIC \
+     -I../luna-base/ -I../luna-base/stats \
+     $(python3 -m pybind11 --includes) \
+     -Wno-sign-compare \
+     `python3-config --ldflags` \
+     lunapi.cpp \
+     -o lunapi$(python3-config --extension-suffix) \
+     -lluna -l_lightgbm -lfftw3 -lz
 
+ENV PYTHONPATH=/build/luna-api
 
 USER jovyan
 
 WORKDIR /lunapi
-
 
 # CMD [ "/bin/bash" ]

@@ -26,10 +26,30 @@
 
 #include "luna.h"
 
+class lunapi_init_t 
+{
+public:
+    lunapi_init_t() 
+    {
+      // initialize the library
+      lunapi_t::init();
+      std::cout << "luna/lunapi v0.1 (30-Dec-2023)\n";      
+    }
+
+    // ~lunapi_init_t()
+    // {
+    //     //finalize 
+    // }
+};
+
+
 namespace py = pybind11;
 
 PYBIND11_MODULE(lunapi, m) {
 
+  // ensure lunapi_t::init() is called at start up
+  static lunapi_init_t lunapi_init;
+  
   m.doc() = "LunaAPI : Python bindings to the C/C++ Luna library";         
 
   m.def("init", &lunapi_t::init, "Initiate the Luna library" );
