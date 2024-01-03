@@ -113,7 +113,8 @@ def stgn(ss):
 
 def stages(p):
     p.silence( True )
-    hyp = p.proc( p, "STAGE" )[ 'STAGE: E' ]
+#    p.proc( "STAGE" )[ 'STAGE: E' ]
+#    hyp = lp.table( p, "STAGE" , "E" ) 
     p.silence( False )
     return hyp
 
