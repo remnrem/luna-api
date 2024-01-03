@@ -28,16 +28,6 @@ RUN git clone --recursive https://github.com/microsoft/LightGBM \
  && cp ../lib_lightgbm.so /usr/local/lib/
 
 RUN cd /build \
- && git clone https://github.com/remnrem/luna-base.git \
- && cd luna-base \
- && make -j 2 LGBM=1 LGBM_PATH=/build/LightGBM \
- && ln -s /build/luna-base/luna /usr/local/bin/luna \
- && ln -s /build/luna-base/destrat /usr/local/bin/destrat \
- && ln -s /build/luna-base/behead /usr/local/bin/behead \
- && ln -s /build/luna-base/fixrows /usr/local/bin/fixrows \
- && sudo cp libluna.so /usr/local/lib/
-
-RUN cd /build \
  && git clone https://gitlab-scm.partners.org/zzz-public/nsrr.git
 
 RUN mkdir /data \
@@ -56,6 +46,16 @@ ENV LD_LIBRARY_PATH=/usr/local/lib/
 
 # force rebuild of lunapi below
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
+RUN cd /build \
+ && git clone https://github.com/remnrem/luna-base.git \
+ && cd luna-base \
+ && make -j 2 LGBM=1 LGBM_PATH=/build/LightGBM \
+ && ln -s /build/luna-base/luna /usr/local/bin/luna \
+ && ln -s /build/luna-base/destrat /usr/local/bin/destrat \
+ && ln -s /build/luna-base/behead /usr/local/bin/behead \
+ && ln -s /build/luna-base/fixrows /usr/local/bin/fixrows \
+ && sudo cp libluna.so /usr/local/lib/
 
 RUN cd /build \
  && git clone https://github.com/remnrem/luna-api.git \
