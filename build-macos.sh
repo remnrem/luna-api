@@ -20,7 +20,7 @@ git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
 mkdir build
 cd build
-cmake ..
+cmake -DBUILD_STATIC_LIB=ON ..
 make -j4
 cp lib_lightgbm.a ../
 cd ..
@@ -28,7 +28,6 @@ cd ..
 # luna-base
 git clone https://github.com/remnrem/luna-base.git
 cd luna-base
-make -j4 LGBM=0
+make -j4 LGBM=1 LGBM_PATH=../LightGBM/
 cp libluna.a ../
 cd ..
-
