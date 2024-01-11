@@ -1,4 +1,7 @@
 
+ls -l /usr/local/opt/libomp/lib/libomp.a 
+exit
+
 mkdir depends
 cd depends
 
