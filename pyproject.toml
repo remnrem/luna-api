@@ -1,0 +1,13 @@
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "lunapi"
+version = "0.0.1"
+readme = "README.md"
+description = "lunapi"
+requires-python = ">=3.7"
+
+[project.urls]
+"www" = "https://zzz.bwh.harvard.edu/luna"
