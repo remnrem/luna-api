@@ -40,7 +40,8 @@ class proj:
       if f is None:
          return proj.eng.get_sample_list()
 
-      # read sample list from file
+      # read sample list from file, after clearing anything present
+      proj.eng.clear()
       self.n = proj.eng.read_sample_list(f)
       print( "read",self.n,"individuals from",f)
 
@@ -62,12 +63,12 @@ class proj:
    def silence(self,b):
       proj.eng.silence(b)
       
-   def opt(self,key,value):
-      proj.eng.opt( key, value )
+   def opt(self,key,value=None):
+      if value is None:
+         return proj.eng.opt( key )
+      else:
+         proj.eng.opt( key, value )
       
-   def opt(self,key):
-      return proj.eng.opt( key )
-
    def opts(self):
       return proj.eng.opts()
 
