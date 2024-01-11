@@ -1,9 +1,9 @@
 
-ls -l /usr/local/opt/libomp/lib/libomp.a 
-exit
-
 mkdir depends
 cd depends
+
+# libomp
+cp /usr/local/opt/libomp/lib/libomp.a .
 
 # FFTW
 wget https://www.fftw.org/fftw-3.3.10.tar.gz
@@ -14,9 +14,6 @@ make -j4
 make install
 cp .libs/libfftw3.a ../
 cd ..
-
-# libomp
-brew install libomp
 
 # LightGBM
 git clone --recursive https://github.com/microsoft/LightGBM
@@ -32,6 +29,6 @@ cd ..
 # luna-base
 git clone https://github.com/remnrem/luna-base.git
 cd luna-base
-make -j4 LGBM=1 LGBM_PATH=../LightGBM/
+make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/
 cp libluna.a ../
 cd ..
