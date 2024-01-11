@@ -12,6 +12,9 @@ make install
 cp .libs/libfftw3.a ../
 cd ..
 
+# libomp
+brew install libomp
+
 # LightGBM
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
