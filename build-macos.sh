@@ -22,6 +22,7 @@ mkdir build
 cd build
 cmake -DBUILD_STATIC_LIB=ON ..
 make -j4
+cd ..
 cp lib_lightgbm.a ../
 cd ..
 
