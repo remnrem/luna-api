@@ -27,6 +27,7 @@ add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
 add_library( omp STATIC IMPORTED GLOBAL )
+add_library( z STATIC IMPORTED GLOBAL )
 
 set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/luna-base/libluna.a" )
 set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/lib_lightgbm.a" )
