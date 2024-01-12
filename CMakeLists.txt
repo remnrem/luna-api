@@ -15,6 +15,7 @@ find_package(pybind11 CONFIG REQUIRED)
 
 include_directories("depends/luna-base/" "depends/luna-base/stats") 
 include_directories("/usr/local/include/")
+include_directories("depends/fftw-3.3.10" "depends/fftw-3.3.10/include/" )
 include_directories("/Users/smp37/LightGBM/include/")
 
 #link_directories("/Users/smp37/LightGBM")
