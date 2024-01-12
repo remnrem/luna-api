@@ -5,6 +5,8 @@ wget -O macos-arm64.tar.gz "https://www.dropbox.com/scl/fi/zg2itwsoc8bo0018w969n
 tar xzvf macos-arm64.tar.gz
 cp macos-arm64/*.a depends/
 
+brew install fftw
+
 cd depends
 
 # includes only
