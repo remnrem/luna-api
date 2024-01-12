@@ -7,3 +7,4 @@ cp macos-arm64/*.a depends/
 # luna-base include headers
 cd depends
 git clone https://github.com/remnrem/luna-base.git
+cp libluna.a luna-base/
