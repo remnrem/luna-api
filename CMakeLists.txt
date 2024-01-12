@@ -32,9 +32,10 @@ set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_S
 set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/lib_lightgbm.a" )
 set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libfftw3.a" )
 set_target_properties( omp       PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libomp.a" )
+set_target_properties( z         PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libz.a" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp )
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp lz )
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
