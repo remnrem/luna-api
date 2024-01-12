@@ -37,6 +37,6 @@ set_target_properties( z         PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_S
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp lz )
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp z )
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
