@@ -9,8 +9,5 @@ readme = "README.md"
 description = "lunapi"
 requires-python = ">=3.8"
 
-[tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
-
 [project.urls]
 "www" = "https://zzz.bwh.harvard.edu/luna"
