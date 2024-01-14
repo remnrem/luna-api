@@ -30,9 +30,9 @@ link_directories("${CMAKE_CURRENT_SOURCE_DIR}/depends/")
 #set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/lib_lightgbm.a" )
 #set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libfftw3.a" )
 
-add_library( luna IMPORTED GLOBAL )
-add_library( lightgbm IMPORTED GLOBAL )
-add_library( fftw3 IMPORTED GLOBAL )
+add_library( luna SHARED IMPORTED GLOBAL )
+add_library( lightgbm SHARED IMPORTED GLOBAL )
+add_library( fftw3 SHARED IMPORTED GLOBAL )
 
 set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/luna-base/libluna.so" )
 set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "/usr/local/lib/lib_lightgbm.so" )
