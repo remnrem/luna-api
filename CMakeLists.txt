@@ -19,24 +19,27 @@ include_directories("depends/fftw-3.3.10" "depends/fftw-3.3.10/include/" )
 include_directories("/Users/smp37/LightGBM/include/")
 include_directories("/opt/homebrew/include/")
 
-
 #link_directories("/Users/smp37/LightGBM")
 link_directories("${CMAKE_CURRENT_SOURCE_DIR}/depends/")
 
-add_library( luna STATIC IMPORTED GLOBAL )
-add_library( lightgbm STATIC IMPORTED GLOBAL )
-add_library( fftw3 STATIC IMPORTED GLOBAL )
-add_library( omp STATIC IMPORTED GLOBAL )
-add_library( z STATIC IMPORTED GLOBAL )
+#add_library( luna STATIC IMPORTED GLOBAL )
+#add_library( lightgbm STATIC IMPORTED GLOBAL )
+#add_library( fftw3 STATIC IMPORTED GLOBAL )
 
-set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/luna-base/libluna.a" )
-set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/lib_lightgbm.a" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libfftw3.a" )
-set_target_properties( omp       PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libomp.a" )
-set_target_properties( z         PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libz.a" )
+#set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/luna-base/libluna.a" )
+#set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/lib_lightgbm.a" )
+#set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/libfftw3.a" )
+
+add_library( luna IMPORTED GLOBAL )
+add_library( lightgbm IMPORTED GLOBAL )
+add_library( fftw3 IMPORTED GLOBAL )
+
+set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_CURRENT_SOURCE_DIR}/depends/luna-base/libluna.so" )
+set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "/usr/local/lib/lib_lightgbm.so" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libfftw3.so" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp z )
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm )
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
