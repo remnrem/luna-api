@@ -1,6 +1,7 @@
 name: Build_macos_arm64
 
-on: [push, pull_request]
+on: [ workflow_dispatch ]
+#on: [push, pull_request]
 
 jobs:
   build_wheels:
