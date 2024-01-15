@@ -12,6 +12,9 @@ set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
 include_directories("/usr/local/include/")
+include_directories("/build/luna-base/")
+include_directories("/build/luna-base/stats/")
+
 add_library( luna SHARED IMPORTED GLOBAL )
 add_library( lightgbm SHARED IMPORTED GLOBAL )
 #add_library( fftw3 SHARED IMPORTED GLOBAL )
