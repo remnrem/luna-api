@@ -161,8 +161,14 @@ PYBIND11_MODULE(lunapi0, m) {
 	  "Return a list of channel labels" )
     .def( "chs", &lunapi_inst_t::channels,
 	  "Return a list of channel labels" )
+
     .def( "annots", &lunapi_inst_t::annots,
-	  "Return a list of annotation class labels" )
+	  "Return a list of all annotations class labels" )
+    .def( "fetch_annots", &lunapi_inst_t::fetch_annots,
+	  "Return a list of intervals for selected annotations" )
+    .def( "fetch_full_annots", &lunapi_inst_t::fecth_full_annots,
+	  "Return a list of intervals and meta-data for selected annotations" )
+
     .def( "stat" , &lunapi_inst_t::status,
 	  "Return a dict of key details on the current EDF" )
 
@@ -182,7 +188,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "slices",&lunapi_inst_t::slices,
 	  "Return a list of data matrices (one per epoch/interval)" ,
 	  "i"_a , "chs"_a , "annots"_a , "time"_a = false )
-        
+    
     .def( "insert_signal" , &lunapi_inst_t::insert_signal,
 	  "Insert a signal" ,
 	  "label"_a , "data"_a , "sr"_a )
