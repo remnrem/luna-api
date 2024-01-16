@@ -15,11 +15,11 @@ include_directories("/build/luna-base/stats/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm SHARED IMPORTED GLOBAL )
-add_library( fftw3 STATIC IMPORTED GLOBAL )
+add_library( fftw3 SHARED IMPORTED GLOBAL )
 
 set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libluna.a" )
 set_target_properties( lightgbm  PROPERTIES IMPORTED_LOCATION "/usr/local/lib/lib_lightgbm.so" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libfftw3.a" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libfftw3.so" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
