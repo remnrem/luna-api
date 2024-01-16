@@ -166,7 +166,7 @@ PYBIND11_MODULE(lunapi0, m) {
 	  "Return a list of all annotations class labels" )
     .def( "fetch_annots", &lunapi_inst_t::fetch_annots,
 	  "Return a list of intervals for selected annotations" )
-    .def( "fetch_full_annots", &lunapi_inst_t::fecth_full_annots,
+    .def( "fetch_full_annots", &lunapi_inst_t::fetch_full_annots,
 	  "Return a list of intervals and meta-data for selected annotations" )
 
     .def( "stat" , &lunapi_inst_t::status,
