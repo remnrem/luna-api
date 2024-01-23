@@ -2,6 +2,8 @@
 #sudo apt-get update
 #sudo apt-get -y install wget libomp-dev
 
+cd ${GITHUB_WORKSPACE}
+
 mkdir depends
 cd depends
 
@@ -35,3 +37,6 @@ cd luna-base
 make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/
 cp libluna.a ../
 cd ..
+
+
+ls -lR
