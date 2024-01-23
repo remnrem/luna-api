@@ -13,7 +13,10 @@ from IPython.core import display as ICD
 class resources:
    POPS_PATH = '/nsrr/common/resources/pops/'
    POPS_LIB = 's2'
+   MODEL_PATH = '/build/luna-models/'
 
+lp_version = "v0.0.4"
+   
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
 
@@ -36,14 +39,15 @@ class proj:
    eng = _luna.inaugurate()
    
    def __init__(self):
-      self.version = "v0.0.4"
       self.n = 0
-      print( "initiated lunapi",self.version,proj.eng ,"\n" )
+      print( "initiated lunapi",lp_version,proj.eng ,"\n" )
+      self.silence( False )
+      self.eng = _luna.inaugurate()
       
    def retire():
       """Retires an existing Luna engine generated via proj()"""
       return _luna.retire()
-
+   
    def build( self, args ):
       """Builds an internal sample-list object given a set of folders
       
@@ -67,10 +71,10 @@ class proj:
 
    
    def sample_list(self, filename = None ):
-      """Reads a sample-list 'filenamne' or return the number of observations
+      """Reads a sample-list 'filenamne' and returns the number of observations
 
       If filename is not defined, this returns the internal sample list
-      of an object
+      as an object
 
       Parameters
       ----------
@@ -114,27 +118,43 @@ class proj:
       """Generates a new instance"""
       
       return inst(proj.eng.inst( n ))
+      
 
    #------------------------------------------------------------------------
       
-   def import_db( self, filename ):
-      proj.eng.import_db( filename )
+#   def import_db( self, filename ):
+#      """Reads a Luna 'destrat' output database"""      
+#      proj.eng.import_db( filename )
 
    #------------------------------------------------------------------------
-   def import_db( self, filename , ids ):
-      proj.eng.import_db( filename , ids )
+#   def import_db( self, filename , ids ):
+#      """Reads a subset of individuals from a 'destrat' output database"""
+#      
+#      proj.eng.import_db( filename , ids )
 
    #------------------------------------------------------------------------
    def clear(self):
+      """Clears any existing project sample-list"""
+      
       proj.eng.clear()
 
 
    #------------------------------------------------------------------------
    def silence(self,b):
+      """Toggles the output mode on/off"""
+      
+      if b: print( 'silencing console outputs' )
+      else: print( 'enabling console outputs' )
       proj.eng.silence(b)
       
    #------------------------------------------------------------------------
+   def flush(self):
+      """Internal command, to flush the output buffer"""
+      proj.eng.flush()
+
+   #------------------------------------------------------------------------
    def opt(self,key=None,value=None):
+      """Set or return a project-level argument/option"""
       if key is None:
          return proj.eng.get_all_opts()
       if value is None:
@@ -146,31 +166,38 @@ class proj:
          
    #------------------------------------------------------------------------
    def opts(self):
+      """Return a dictionary of all project-level variables"""
       return proj.eng.get_all_opts()
 
    
    #------------------------------------------------------------------------
    def clear_opt(self,key):
+      """Clear a project-level option/variable"""
       proj.eng.clear_opt(key)
 
    #------------------------------------------------------------------------
    def clear_opts(self):
+      """Clear all project-level options/variables"""
       proj.eng.clear_opts()
 
    #------------------------------------------------------------------------   
    def clear_ivars(self):
+      """Clear individual-level variables for all individuals"""
       proj.eng.clear_ivars()
 
    #------------------------------------------------------------------------
    def get_n(self,id):
+      """Return the number of individuals in the sample-list"""
       return proj.eng.get_n(id)
 
    #------------------------------------------------------------------------   
    def get_id(self,n):
+      """Return the ID of an individual from the sample-list"""
       return proj.eng.get_id(n)
 
    #------------------------------------------------------------------------
    def get_edf(self,x):
+      """Return the EDF filename for an individual from the sample-list"""
       if ( isinstance(x,int) ):
          return proj.eng.get_edf(x)
       else:
@@ -179,6 +206,7 @@ class proj:
 
    #------------------------------------------------------------------------      
    def get_annots(self,x):
+      """Return the annotation filenames for an individual from the sample-list"""
       if ( isinstance(n,int) ):
          return proj.eng.get_annot(x)
       else:
@@ -187,6 +215,7 @@ class proj:
 
    #------------------------------------------------------------------------      
    def import_db(self,f,s=None):
+      """Import a destrat-style Luna output database"""
       if s is None:
          return proj.eng.import_db(f)
       else:
@@ -194,12 +223,14 @@ class proj:
 
    #------------------------------------------------------------------------      
    def eval(self, cmdstr ):
+      """Evaluates one or more Luna commands for all sample-list individuals"""
       r = proj.eng.eval(cmdstr)
       return tables( r )
 
 
    #------------------------------------------------------------------------   
    def commands( self ):
+      """Return a list of commands in the output set (following eval()"""
       t = pd.DataFrame( proj.eng.commands() )
       t.columns = ["Command"]
       return t
@@ -210,6 +241,8 @@ class proj:
 
    #------------------------------------------------------------------------   
    def strata( self ):
+      """Return a datraframe of command/strata pairs from the output set"""
+      
       if empty_result_set(): return None
       t = pd.DataFrame( proj.eng.strata() )      
       t.columns = ["Command","Stata"]
@@ -217,6 +250,7 @@ class proj:
 
    #------------------------------------------------------------------------
    def table( self, cmd , strata = 'BL' ):
+      """Return a dataframe from the output set"""
       if empty_result_set(): return None
       r = proj.eng.table( cmd , strata )
       t = pd.DataFrame( r[1] ).T
@@ -225,6 +259,7 @@ class proj:
 
    #------------------------------------------------------------------------
    def vars( self, cmd , strata = 'BL' ):
+      """Return a list of all variables for an output table"""
       if empty_result_set(): return None
       return proj.eng.variables( cmd , strata )
 
@@ -234,8 +269,6 @@ class proj:
 
 class inst:
    """This class represents a single individual/instance (signals & annotations)"""
-
-
    
    def __init__(self,p=None):
       if ( isinstance(p,str) ):
@@ -250,48 +283,53 @@ class inst:
 
    #------------------------------------------------------------------------
    def attach_edf( self, f ):
+      """Attach an EDF from a file"""
       return self.edf.attach_edf( f )
 
    #------------------------------------------------------------------------
    def attach_annot( self, annot ):
+      """Attach annotations from a file"""
       return self.edf.attach_annot( annot )
 
    #------------------------------------------------------------------------
    def stat( self ):
+      """Return a dataframe of basic statistics"""
       t = pd.DataFrame( self.edf.stat(), index=[0] ).T
       t.columns = ["Value"]
       return t
 
    #------------------------------------------------------------------------
    def refresh( self ):
+      """Refresh an attached EDF"""
       self.edf.refresh()
 
-   #------------------------------------------------------------------------
-   def drop( self ):
-      self.edf.drop()
 
    #------------------------------------------------------------------------      
    def channels( self ):
+      """Returns of dataframe of current channels"""
       t = pd.DataFrame( self.edf.channels() )
+      if len( t ) is 0: return t
       t.columns = ["Channels"]
       return t
 
    #------------------------------------------------------------------------   
    def annots( self ):
+      """Returns of dataframe of current annotations"""
       t = pd.DataFrame( self.edf.annots() )
+      if len( t ) is 0: return t
       t.columns = ["Annotations"]
       return t
 
    #------------------------------------------------------------------------
    def eval( self, cmdstr ):
-      print( self.edf.eval( cmdstr ) )
-
+      """Evaluate one or more Luna commands, storing results internally"""
+      self.edf.eval( cmdstr ) 
+      
    #------------------------------------------------------------------------
    def proc( self, cmdstr ):
+      """Evaluate one or more Luna commands, returning results as an object"""
       # < log , tables >
       r = self.edf.proc( cmdstr )
-      # print console to stdout
-      print( r[0] )
       # extract and return result tables
       return tables( r[1] ) 
 
@@ -301,6 +339,7 @@ class inst:
 
    #------------------------------------------------------------------------
    def strata( self ):
+      """Return a dataframe of command/strata pairs from the output set"""
       if ( self.empty_result_set() ): return None
       t = pd.DataFrame( self.edf.strata() )
       t.columns = ["Command","Stata"]
@@ -308,6 +347,7 @@ class inst:
 
    #------------------------------------------------------------------------
    def table( self, cmd , strata = 'BL' ):
+      """Return a dataframe for a given command/strata pair from the output set"""
       if ( self.empty_result_set() ): return None
       r = self.edf.table( cmd , strata )
       t = pd.DataFrame( r[1] ).T
@@ -316,43 +356,58 @@ class inst:
 
    #------------------------------------------------------------------------
    def vars( self, cmd , strata = 'BL' ):
+      """Return a list of all variables for a output set table"""
       if ( self.empty_result_set() ): return None
       return self.edf.variables( cmd , strata )
 
 
    #------------------------------------------------------------------------
    def e2i( self, epochs ):
+      """Helper function to convert epoch (1-based) to intervals"""
       return self.edf.e2i( epochs )
    
    # --------------------------------------------------------------------------------
    def s2i( self, secs ):
+      """Helper function to convert seconds to intervals"""
       return self.edf.s2i( secs )
 
    # --------------------------------------------------------------------------------
    def data( self, chs , annots , time = False ):
+      """Returns all data for certain channels and annotations"""
       return self.edf.data( chs , annots , time )
 
    # --------------------------------------------------------------------------------
    def slice( self, intervals, chs , annots , time = False ):
+      """Return signal/annotation data aggregated over a set of intervals"""
       return self.edf.slice( intervals, chs , annots , time )
 
    # --------------------------------------------------------------------------------   
    def slices( intervals, chs , annots , time = False ):
+      """Return a series of signal/annotation data objects for each requested interval"""
       return self.edf.slices( intervals, chs , annots , time )
    
-
    # --------------------------------------------------------------------------------
    def insert_signal( self, label , data , sr ):
+      """Insert a signal into an in-memory EDF"""
       return self.edf.insert_signal( label , data , sr )
 
    # --------------------------------------------------------------------------------
    def update_signal( self, label , data ):
+      """Update an existing signal in an in-memory EDF"""
       return self.edf.update_signal( label , data )
 
    # --------------------------------------------------------------------------------
    def insert_annot( self, label , intervals, durcol2 = False ):
+      """Insert annotations into an in-memory dataset"""
       return self.edf.insert_annot( label , intervals , durcol2 )
 
+
+
+   # --------------------------------------------------------------------------------
+   #
+   # Luna function wrappers
+   #
+   # --------------------------------------------------------------------------------
 
    
    # --------------------------------------------------------------------------------
@@ -417,7 +472,22 @@ class inst:
       res = res[ ["PP_N1","PP_N2","PP_N3","PP_R","PP_W" ]  ]
       return res
 
-      
+
+   # --------------------------------------------------------------------------------                                                                                                                           
+   def SUN2019( self, chs , path = resources.POPS_PATH , lib = resources.POPS_LIB , edger = True ):
+      """Run SUN2019 prediction model"""
+
+
+   # --------------------------------------------------------------------------------                                                                                                                           
+   def stages():
+      """Return of alist of stages"""   
+      #    p.proc( "STAGE" )[ 'STAGE: E' ]
+      #    hyp = lp.table( p, "STAGE" , "E" ) 
+      #   p.silence( False )
+      # return hyp
+
+
+   
 # --------------------------------------------------------------------------------
 #
 # misc non-member utilities functions
@@ -433,6 +503,7 @@ def cmdfile( f ):
 
 # --------------------------------------------------------------------------------
 def strata( ts ):
+   """Utility function to format tables"""
    r = [ ] 
    for cmd in ts:
       strata = ts[cmd].keys()
@@ -446,6 +517,7 @@ def strata( ts ):
 
 # --------------------------------------------------------------------------------
 def table( ts, cmd , strata = 'BL' ):
+   """Utility function to format tables"""
    r = ts[cmd][strata]
    t = pd.DataFrame( r[1] ).T
    t.columns = r[0]
@@ -453,6 +525,7 @@ def table( ts, cmd , strata = 'BL' ):
 
 # --------------------------------------------------------------------------------
 def tables( ts ):
+   """Utility function to format tables"""
    r = { }
    for cmd in ts:
       strata = ts[cmd].keys()
@@ -462,23 +535,27 @@ def tables( ts ):
 
 # --------------------------------------------------------------------------------
 def table2df( r ):
+   """Utility function to format tables"""
    t = pd.DataFrame( r[1] ).T
    t.columns = r[0]
    return t
 
 # --------------------------------------------------------------------------------
 def show( dfs ):
+   """Utility function to format tables"""
    for title , df in dfs.items():
       print( color.BOLD + color.DARKCYAN + title + color.END )
       ICD.display(df)
-
-
-  
+ 
 # --------------------------------------------------------------------------------
 #
 # Helpers
 #
 # --------------------------------------------------------------------------------
+
+def version():
+   """Return version of lunapi & luna"""
+   return { "lunapi": lp_version , "luna": _luna.version() }
 
 class color:
    PURPLE = '\033[95m'
@@ -496,6 +573,7 @@ class color:
 
 
 def default_xy():
+   """Default channel locations (64-ch EEG only, currently)"""
     vals = [["FP1", "AF7", "AF3", "F1", "F3", "F5", "F7", "FT7", 
        "FC5", "FC3", "FC1", "C1", "C3", "C5", "T7", "TP7", "CP5", 
        "CP3", "CP1", "P1", "P3", "P5", "P7", "P9", "PO7", "PO3", 
@@ -536,7 +614,7 @@ def default_xy():
 
 # --------------------------------------------------------------------------------
 def stgcol(ss):
-    """translate a sleep stage string to a colour for plotting"""
+    """Utility function: translate a sleep stage string to a colour for plotting"""
     stgcols = { 'N1' : "#00BEFAFF" ,
                 'N2' : "#0050C8FF" ,
                 'N3' : "#000050FF" ,
@@ -551,7 +629,7 @@ def stgcol(ss):
 
 # --------------------------------------------------------------------------------
 def stgn(ss):
-    """translate a sleep stage string to a numeric for plotting"""
+    """Utility function: translate a sleep stage string to a number for plotting"""
    
     stgns = { 'N1' : -1,
               'N2' : -2,
@@ -563,24 +641,6 @@ def stgn(ss):
               '?' : 2 }
     return [ stgns.get(item,item) for item in ss ]
 
-
-# --------------------------------------------------------------------------------
-#
-# Luna function wrappers
-#
-# --------------------------------------------------------------------------------
-
-
-def stages():
-   """return of alist of stages"""   
-   global p
-   if p is None:
-      return      
-   p.silence( True )
-   #    p.proc( "STAGE" )[ 'STAGE: E' ]
-   #    hyp = lp.table( p, "STAGE" , "E" ) 
-   p.silence( False )
-   return hyp
 
 
 

@@ -46,6 +46,10 @@ PYBIND11_MODULE(lunapi0, m) {
 	 &lunapi_t::cmdfile ,
 	 "Load a Luna script from a file" );    
 
+  m.def( "version" ,
+	 &lunapi_t::version ,
+	 "Version of Luna" );
+  
   //
   // lunapi_t engine class
   //
@@ -68,6 +72,8 @@ PYBIND11_MODULE(lunapi0, m) {
 
     .def( "silence", &lunapi_t::silence )
 
+    .def( "flush" , &lunapi_t::flush )
+    
     .def("opt",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::var),
 		"Set an option value" )
 
