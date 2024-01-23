@@ -31,7 +31,7 @@ using namespace pybind11::literals;
 
 PYBIND11_MODULE(lunapi0, m) {
 
-  m.doc() = "LunaAPI: Python bindings for the Luna C/C++ library";         
+  m.doc() = "LunaAPI: Python bindings for the Luna C/C++ library";
   
   m.def( "inaugurate",
 	 &lunapi_t::inaugurate,
@@ -70,10 +70,14 @@ PYBIND11_MODULE(lunapi0, m) {
 
     .def("opt",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::var),
 		"Set an option value" )
-    .def("opt",py::overload_cast<const std::string &>(&lunapi_t::var),
-		"Show an option value" )
-    .def("opts",&lunapi_t::vars,
-		"List all options sets" )
+
+    .def("get_opt",py::overload_cast<const std::string &>(&lunapi_t::var,py::const_ ),
+	 "Show an option value" )
+    .def("get_opts",py::overload_cast<const std::vector<std::string> &>(&lunapi_t::vars,py::const_),
+	 "Show multiple option values" )
+    .def("get_all_opts",py::overload_cast<>(&lunapi_t::vars,py::const_),
+	 "Show all option values" )
+    
     .def("clear_opt",&lunapi_t::dropvar,
 		"Clear an option" )
     .def("clear_opts",&lunapi_t::dropvars,
