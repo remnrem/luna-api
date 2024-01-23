@@ -1,6 +1,6 @@
 
-apt-get update
-apt-get -y install wget libomp-dev
+sudo apt-get update
+sudo apt-get -y install wget libomp-dev
 
 mkdir depends
 cd depends
