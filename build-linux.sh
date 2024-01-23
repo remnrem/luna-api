@@ -1,6 +1,6 @@
 
-sudo apt-get update
-sudo apt-get -y install wget libomp-dev
+#sudo apt-get update
+#sudo apt-get -y install wget libomp-dev
 
 mkdir depends
 cd depends
@@ -9,7 +9,7 @@ cd depends
 cp /usr/local/opt/libomp/lib/libomp.a .
 
 # FFTW
-wget https://www.fftw.org/fftw-3.3.10.tar.gz
+curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
 cd fftw-3.3.10
 ./configure
