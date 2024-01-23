@@ -23,5 +23,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-	  name: Build
+          name: Build
           path: ./dist/*.whl
