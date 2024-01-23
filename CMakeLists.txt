@@ -13,11 +13,14 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/usr/local/lib -L/usr/lo
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-include_directories("../luna-base/" "../luna-base/stats") 
+
 include_directories("/usr/local/include/")
 include_directories("depends/fftw-3.3.10" "depends/fftw-3.3.10/include/" )
-include_directories("/Users/smp37/LightGBM/include/")
-include_directories("/opt/homebrew/include/")
+include_directories("depends/luna-base/" "depends/luna-base/stats")
+include_directories("depends/LightGBM/include/")
+#include_directories("/Users/smp37/LightGBM/include/")
+#include_directories("../luna-base/" "../luna-base/stats")
+#include_directories("/opt/homebrew/include/")
 
 link_directories("${CMAKE_CURRENT_SOURCE_DIR}/depends/")
 
