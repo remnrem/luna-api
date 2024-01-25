@@ -208,10 +208,12 @@ PYBIND11_MODULE(lunapi0, m) {
 	  "Insert an annotation" ,
 	  "label"_a , "intervals"_a , "durcol2"_a = false ) 
 
-    .def("ivar",py::overload_cast<const std::string &>(&lunapi_inst_t::ivar,py::const_),
-	 "Return an individual-variable")
     .def("ivar",py::overload_cast<const std::string &,const std::string &>(&lunapi_inst_t::ivar),
 	 "Set an individual-variable")
+    .def("get_ivar",py::overload_cast<const std::string &>(&lunapi_inst_t::ivar,py::const_),
+	 "Return an individual-variable")
+    .def("ivars", &lunapi_inst_t::ivars,
+	 "Return all individual-variables")
     .def("clear_ivar",&lunapi_inst_t::clear_ivar,
 	 "Clear individual-variables")
 

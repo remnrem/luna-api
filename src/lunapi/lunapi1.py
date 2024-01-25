@@ -9,9 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from IPython.core import display as ICD
+from scipy.stats.mstats import winsorize
 
+# resource set for Docker container version
 class resources:
-   POPS_PATH = '/nsrr/common/resources/pops/'
+   POPS_PATH = '/build/nsrr/common/resources/pops/'
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
@@ -140,7 +142,7 @@ class proj:
 
 
    #------------------------------------------------------------------------
-   def silence(self,b):
+   def silence(self, b = True ):
       """Toggles the output mode on/off"""
       
       if b: print( 'silencing console outputs' )
@@ -153,30 +155,30 @@ class proj:
       proj.eng.flush()
 
    #------------------------------------------------------------------------
-   def opt(self,key=None,value=None):
+   def var(self,key=None,value=None):
       """Set or return a project-level argument/option"""
-      if key is None:
+      if key == None:
          return proj.eng.get_all_opts()
-      if value is None:
+      if value == None:
          if type(key) is not list: key = [ key ]
-         return proj.eng.get_opts( key )
+         return proj.eng.get_opt( key )
       else:         
          proj.eng.opt( key, value )
 
          
    #------------------------------------------------------------------------
-   def opts(self):
+   def vars(self):
       """Return a dictionary of all project-level variables"""
       return proj.eng.get_all_opts()
 
    
    #------------------------------------------------------------------------
-   def clear_opt(self,key):
+   def clear_var(self,key):
       """Clear a project-level option/variable"""
       proj.eng.clear_opt(key)
 
    #------------------------------------------------------------------------
-   def clear_opts(self):
+   def clear_vars(self):
       """Clear all project-level options/variables"""
       proj.eng.clear_opts()
 
@@ -216,7 +218,7 @@ class proj:
    #------------------------------------------------------------------------      
    def import_db(self,f,s=None):
       """Import a destrat-style Luna output database"""
-      if s is None:
+      if s == None:
          return proj.eng.import_db(f)
       else:
          return proj.eng.import_db_subset(f,s)
@@ -226,8 +228,7 @@ class proj:
       """Evaluates one or more Luna commands for all sample-list individuals"""
       r = proj.eng.eval(cmdstr)
       return tables( r )
-
-
+   
    #------------------------------------------------------------------------   
    def commands( self ):
       """Return a list of commands in the output set (following eval()"""
@@ -243,7 +244,7 @@ class proj:
    def strata( self ):
       """Return a datraframe of command/strata pairs from the output set"""
       
-      if empty_result_set(): return None
+      if self.empty_result_set(): return None
       t = pd.DataFrame( proj.eng.strata() )      
       t.columns = ["Command","Stata"]
       return t
@@ -251,21 +252,102 @@ class proj:
    #------------------------------------------------------------------------
    def table( self, cmd , strata = 'BL' ):
       """Return a dataframe from the output set"""
-      if empty_result_set(): return None
+      if self.empty_result_set(): return None
       r = proj.eng.table( cmd , strata )
       t = pd.DataFrame( r[1] ).T
       t.columns = r[0]
       return t
 
    #------------------------------------------------------------------------
-   def vars( self, cmd , strata = 'BL' ):
+   def variables( self, cmd , strata = 'BL' ):
       """Return a list of all variables for an output table"""
-      if empty_result_set(): return None
+      if self.empty_result_set(): return None
       return proj.eng.variables( cmd , strata )
 
-   
+
+# 
 # --------------------------------------------------------------------------------
+# project level wrapper functions
+#
+
+   # --------------------------------------------------------------------------------
+   def pops( self, s = None, s1 = None , s2 = None,
+             path = None , lib = None ,
+             do_edger = True ,
+             no_filter = False ,
+             do_reref = False ,
+             m = None , m1 = None , m2 = None ):
+      """Run the POPS stager"""
+
+      if path == None: path = resources.POPS_PATH
+      if lib == None: lib = resources.POPS_LIB
+      
+      import os
+      if not os.path.isdir( path ):         
+         return 'could not open POPS resource path ' + path 
+
+      if s == None and s1 == None:
+         print( 'must set s or s1 and s2 to EEGs' )
+         return
+
+      if ( s1 == None ) != ( s2 == None ):
+         print( 'must set s or s1 and s2 to EEGs' )
+         return
+         
+      # set options
+      self.var( 'mpath' , path )
+      self.var( 'lib' , lib )
+      self.var( 'do_edger' , '1' if do_edger else '0' )
+      self.var( 'do_reref' , '1' if do_reref else '0' )
+      self.var( 'no_filter' , '1' if no_filter else '0' )
+      if s != None: self.var( 's' , s )
+      if m != None: self.var( 'm' , m )
+      if s1 != None: self.var( 's1' , s1 )
+      if s2 != None: self.var( 's2' , s2 )
+      if m1 != None: self.var( 'm1' , m1 )
+      if m2 != None: self.var( 'm2' , m2 )
+      
+      # get either one- or two-channel mode Luna script from POPS folder
+      twoch = s1 != None and s2 != None;
+      if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
+      else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
+      
+      # run the command
+      self.eval( cmdstr )
+
+      # return of results
+      res = self.table( 'POPS' , 'E' )
+      res = res[ ["PP_N1","PP_N2","PP_N3","PP_R","PP_W" ]  ]
+      return res
+
+
+   # --------------------------------------------------------------------------------
+   def predict_SUN2019( self, cen , th = '3' , path = None ):
+      """Run SUN2019 prediction model for a project
+
+      This assumes that ${age} will be set via a vars file, i.e.
+
+         proj.opt( 'vars' , 'ages.txt' )      
+
+      """
+      if path == None: path = resources.MODEL_PATH
+      self.var( 'cen' , cen )
+      self.var( 'mpath' , path )
+      self.var( 'th' , str(th) )
+      return self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
+
+
+
+
+      
+
+# ================================================================================
+# -------------------------------------------------------------------------------- 
+#  
 # inst class 
+#
+# --------------------------------------------------------------------------------
+# ================================================================================
 
 class inst:
    """This class represents a single individual/instance (signals & annotations)"""
@@ -303,12 +385,22 @@ class inst:
       """Refresh an attached EDF"""
       self.edf.refresh()
 
+   #------------------------------------------------------------------------      
+   def ivar( self , key , value = None ):
+      """Set or get an individual-level variable"""
+      if value != None: self.edf.ivar( key , value )
+      else: return self.edf.get_ivar( key )
+         
+   #------------------------------------------------------------------------      
+   def ivars( self ):
+      """Return all individual-level variables"""
+      return self.edf.ivars()
 
    #------------------------------------------------------------------------      
    def channels( self ):
       """Returns of dataframe of current channels"""
       t = pd.DataFrame( self.edf.channels() )
-      if len( t ) is 0: return t
+      if len( t ) == 0: return t
       t.columns = ["Channels"]
       return t
 
@@ -316,14 +408,15 @@ class inst:
    def annots( self ):
       """Returns of dataframe of current annotations"""
       t = pd.DataFrame( self.edf.annots() )
-      if len( t ) is 0: return t
+      if len( t ) == 0: return t
       t.columns = ["Annotations"]
       return t
 
    #------------------------------------------------------------------------
    def eval( self, cmdstr ):
       """Evaluate one or more Luna commands, storing results internally"""
-      self.edf.eval( cmdstr ) 
+      self.edf.eval( cmdstr )
+      return self.strata()
       
    #------------------------------------------------------------------------
    def proc( self, cmdstr ):
@@ -355,7 +448,7 @@ class inst:
       return t
 
    #------------------------------------------------------------------------
-   def vars( self, cmd , strata = 'BL' ):
+   def variables( self, cmd , strata = 'BL' ):
       """Return a list of all variables for a output set table"""
       if ( self.empty_result_set() ): return None
       return self.edf.variables( cmd , strata )
@@ -411,21 +504,22 @@ class inst:
 
    
    # --------------------------------------------------------------------------------
-   def pops( self, chs , path = resources.POPS_PATH , lib = resources.POPS_LIB , edger = True ):
+   def pops( self, chs , path = None , lib = None , edger = True ):
       """Run the POPS stager"""
 
+      if path == None: path = resources.POPS_PATH
+      if lib == None: lib = resources.POPS_LIB
+      
       import os
       if not os.path.isdir( path ):         
-         return 'could not open POPS resource path ' + path + '\n'
-      
-      # resources.POPS_PATH
-      # resources.POPS_LIB
+         return 'could not open POPS resource path ' + path 
 
+      # e.g. basic form (+ EDGER)
       # luna edfs/learn-nsrr01.edf -s 'COPY sig=EEG  tag=FLT
       #                                FILTER sig=EEG_FLT bandpass=0.3,35  tw=0.2 ripple=0.01
       #                                COPY sig=EEG_FLT  tag=NORM
       #                                ROBUST-NORM sig=EEG_FLT_NORM epoch winsor=0.002
-      #                                POPS path=/Users/smp37/dropbox/projects/moonlight/pops lib=s2 alias=CEN,ZEN|EEG_FLT,EEG_FLT_NORM'
+      #                                POPS path=.../pops lib=s2 alias=CEN,ZEN|EEG_FLT,EEG_FLT_NORM'
 
       cmdstr = ""
       
@@ -473,12 +567,21 @@ class inst:
       return res
 
 
-   # --------------------------------------------------------------------------------                                                                                                                           
-   def SUN2019( self, chs , path = resources.POPS_PATH , lib = resources.POPS_LIB , edger = True ):
-      """Run SUN2019 prediction model"""
+   # --------------------------------------------------------------------------------
+   def predict_SUN2019( self, cen , age = None , th = '3' , path = None ):
+      """Run SUN2019 prediction model for a single individual"""
+      if path == None: path = resources.MODEL_PATH
+      # set ivars
+      if age == None:
+         print( 'need to set age ivar' )
+         return
+      self.ivar( 'age' , str(age) )
+      self.ivar( 'cen' , cen )
+      self.ivar( 'mpath' , path )
+      self.ivar( 'th' , str(th) )
+      self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
 
-
-   # --------------------------------------------------------------------------------                                                                                                                           
+   # --------------------------------------------------------------------------------   
    def stages():
       """Return of alist of stages"""   
       #    p.proc( "STAGE" )[ 'STAGE: E' ]
@@ -574,40 +677,40 @@ class color:
 
 def default_xy():
    """Default channel locations (64-ch EEG only, currently)"""
-    vals = [["FP1", "AF7", "AF3", "F1", "F3", "F5", "F7", "FT7", 
-       "FC5", "FC3", "FC1", "C1", "C3", "C5", "T7", "TP7", "CP5", 
-       "CP3", "CP1", "P1", "P3", "P5", "P7", "P9", "PO7", "PO3", 
-       "O1", "IZ", "OZ", "POZ", "PZ", "CPZ", "FPZ", "FP2", "AF8", 
-       "AF4", "AFZ", "FZ", "F2", "F4", "F6", "F8", "FT8", "FC6", 
-       "FC4", "FC2", "FCZ", "CZ", "C2", "C4", "C6", "T8", "TP8", 
-       "CP6", "CP4", "CP2", "P2", "P4", "P6", "P8", "P10", "PO8", 
-       "PO4", "O2"],
-      [-0.139058, -0.264503, -0.152969, -0.091616, -0.184692, 
-       -0.276864, -0.364058, -0.427975, -0.328783, -0.215938, 
-       -0.110678, -0.1125, -0.225, -0.3375, -0.45, -0.427975, 
-       -0.328783, -0.215938, -0.110678, -0.091616, -0.184692, 
-       -0.276864, -0.364058, -0.4309, -0.264503, -0.152969, 
-       -0.139058, 0, 0, 0, 0, 0, 0, 0.139058, 0.264503, 0.152969, 
-       0, 0, 0.091616, 0.184692, 0.276864, 0.364058, 0.427975, 
-       0.328783, 0.215938, 0.110678, 0, 0, 0.1125, 0.225, 0.3375, 
-       0.45, 0.427975, 0.328783, 0.215938, 0.110678, 0.091616, 
-       0.184692, 0.276864, 0.364058, 0.4309, 0.264503, 0.152969, 
-       0.139058],
-   [0.430423, 0.373607, 0.341595, 0.251562, 0.252734, 
-       0.263932, 0.285114, 0.173607, 0.162185, 0.152059, 0.14838, 
-       0.05, 0.05, 0.05, 0.05, -0.073607, -0.062185, -0.052059, 
-       -0.04838, -0.151562, -0.152734, -0.163932, -0.185114, 
-       -0.271394, -0.273607, -0.241595, -0.330422, -0.45, -0.35, 
-       -0.25, -0.15, -0.05, 0.45, 0.430423, 0.373607, 0.341595, 
-       0.35, 0.25, 0.251562, 0.252734, 0.263932, 0.285114, 0.173607, 
-       0.162185, 0.152059, 0.14838, 0.15, 0.05, 0.05, 0.05, 
-       0.05, 0.05, -0.073607, -0.062185, -0.052059, -0.04838, 
-       -0.151562, -0.152734, -0.163932, -0.185114, -0.271394, 
-       -0.273607, -0.241595, -0.330422]]
+   vals = [["FP1", "AF7", "AF3", "F1", "F3", "F5", "F7", "FT7", 
+            "FC5", "FC3", "FC1", "C1", "C3", "C5", "T7", "TP7", "CP5", 
+            "CP3", "CP1", "P1", "P3", "P5", "P7", "P9", "PO7", "PO3", 
+            "O1", "IZ", "OZ", "POZ", "PZ", "CPZ", "FPZ", "FP2", "AF8", 
+            "AF4", "AFZ", "FZ", "F2", "F4", "F6", "F8", "FT8", "FC6", 
+            "FC4", "FC2", "FCZ", "CZ", "C2", "C4", "C6", "T8", "TP8", 
+            "CP6", "CP4", "CP2", "P2", "P4", "P6", "P8", "P10", "PO8", 
+            "PO4", "O2"],
+           [-0.139058, -0.264503, -0.152969, -0.091616, -0.184692, 
+            -0.276864, -0.364058, -0.427975, -0.328783, -0.215938, 
+            -0.110678, -0.1125, -0.225, -0.3375, -0.45, -0.427975, 
+            -0.328783, -0.215938, -0.110678, -0.091616, -0.184692, 
+            -0.276864, -0.364058, -0.4309, -0.264503, -0.152969, 
+            -0.139058, 0, 0, 0, 0, 0, 0, 0.139058, 0.264503, 0.152969, 
+            0, 0, 0.091616, 0.184692, 0.276864, 0.364058, 0.427975, 
+            0.328783, 0.215938, 0.110678, 0, 0, 0.1125, 0.225, 0.3375, 
+            0.45, 0.427975, 0.328783, 0.215938, 0.110678, 0.091616, 
+            0.184692, 0.276864, 0.364058, 0.4309, 0.264503, 0.152969, 
+            0.139058],
+           [0.430423, 0.373607, 0.341595, 0.251562, 0.252734, 
+            0.263932, 0.285114, 0.173607, 0.162185, 0.152059, 0.14838, 
+            0.05, 0.05, 0.05, 0.05, -0.073607, -0.062185, -0.052059, 
+            -0.04838, -0.151562, -0.152734, -0.163932, -0.185114, 
+            -0.271394, -0.273607, -0.241595, -0.330422, -0.45, -0.35, 
+            -0.25, -0.15, -0.05, 0.45, 0.430423, 0.373607, 0.341595, 
+            0.35, 0.25, 0.251562, 0.252734, 0.263932, 0.285114, 0.173607, 
+            0.162185, 0.152059, 0.14838, 0.15, 0.05, 0.05, 0.05, 
+            0.05, 0.05, -0.073607, -0.062185, -0.052059, -0.04838, 
+            -0.151562, -0.152734, -0.163932, -0.185114, -0.271394, 
+            -0.273607, -0.241595, -0.330422]]
     
-    topo = pd.DataFrame(np.array(vals).T, columns=['CH', 'X', 'Y'])
-    topo[['X', 'Y']] = topo[['X', 'Y']].apply(pd.to_numeric)
-    return topo
+   topo = pd.DataFrame(np.array(vals).T, columns=['CH', 'X', 'Y'])
+   topo[['X', 'Y']] = topo[['X', 'Y']].apply(pd.to_numeric)
+   return topo
 
 
    
@@ -622,7 +725,8 @@ def stgcol(ss):
                 'R' : "#FA1432FF",
                 'W' : "#31AD52FF",
                 'L' : "#F6F32AFF",
-                '?' : "#64646464" }    
+                '?' : "#64646464",
+                None : "#00000000" }
     return [ stgcols.get(item,item) for item in ss ] 
 
 
@@ -638,7 +742,8 @@ def stgn(ss):
               'R' : 0,
               'W' : 1,
               'L' : 2,
-              '?' : 2 }
+              '?' : 2,
+              None : 2 }
     return [ stgns.get(item,item) for item in ss ]
 
 
@@ -654,45 +759,74 @@ def stgn(ss):
 # --------------------------------------------------------------------------------
 def hypno( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
     """Plot a hypnogram"""
-    ssn = lunapi.stgn( ss )
-    if e is None: e = np.arange(1, len(ss)+1, 1)
+    ssn = stgn( ss )
+    if e == None: e = np.arange(0, len(ssn), 1)
+    e = e/120
     plt.figure(figsize=(xsize , ysize ))
-    plt.plot( e/120 , ssn , c = 'gray' , lw = 0.5 )
-    plt.scatter( e/120 , ssn , c = lunapi.stgcol( ss ) , zorder=2.5 , s = 10 )
+    plt.plot( e , ssn , c = 'gray' , lw = 0.5 )
+    plt.scatter( e , ssn , c = stgcol( ss ) , zorder=2.5 , s = 10 )
     plt.ylabel('Sleep stage')
     plt.xlabel('Time (hrs)')
     plt.ylim(-3.5, 2.5)
+    plt.xlim(0,max(e))
     plt.yticks([-3,-2,-1,0,1,2] , ['N3','N2','N1','R','W','?'] )
-    if ( title is not None ): plt.title( title )
+    if ( title != None ): plt.title( title )
     plt.show()
 
 # --------------------------------------------------------------------------------
-def hypno_density( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
-   import matplotlib.pyplot as plt
-   import numpy as np
+def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
+   """Generate a hypno-density plot from a prior POPS/SOAP run"""
 
-   x = np.arange(1, len(res), 1)
-   y = res.to_numpy()
+   # no data?
+   if len(probs) == 0: return
+
+   res = probs[ ["PP_N1","PP_N2","PP_N3","PP_R","PP_W" ]  ]
+   ne = len(res)
+   x = np.arange(1, ne+1, 1)
+   y = res.to_numpy(dtype=float)
    fig, ax = plt.subplots()
-   ax.stackplot(x, y)
-   ax.set(xlim=(0, 8), xticks=np.arange(1, 8),
-          ylim=(0, 8), yticks=np.arange(1, 8))
+   xsize = 20
+   ysize=2.5
+   fig.set_figheight(ysize)
+   fig.set_figwidth(xsize)
+   ax.set_xlabel('Epoch')
+   ax.set_ylabel('Prob(stage)')
+   ax.stackplot(x, y.T , colors = stgcol([ 'N1','N2','N3','R','W']) )
+   ax.set(xlim=(1, ne), xticks=[ 1 , ne ] , 
+          ylim=(0, 1), yticks=np.arange(0, 1))                                                                                             
    plt.show()
 
-    
+
 # --------------------------------------------------------------------------------
-def spec(df , ch = None ):
+# TODO: stage duration plot
+# TODO: NREM cycle plot
+# TODO: overview of hypnogram plot
+
+
+# --------------------------------------------------------------------------------
+def spec(df , ch = None , mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
     """Returns a spectrogram from a PSD or MTM epoch table (CH_E_F)"""
-    if ch is not None: df = df.loc[ df['CH'] == ch ]
+    if ch != None: df = df.loc[ df['CH'] == ch ]
     if len(df) == 0: return
     x = df['E'].to_numpy(dtype=int)
     y = df['F'].to_numpy(dtype=float)
     z = df['PSD'].to_numpy(dtype=float)
-    z = winsorize( z , limits=[0.025, 0.025] )
-    spec0( x,y,z )
+    if mine == None: mine = min(x)
+    if maxe == None: maxe = max(x)
+    if minf == None: minf = min(y)
+    if maxf == None: maxf = max(y)
+    incl = np.zeros(len(df), dtype=bool)
+    incl[ (x >= mine) & (x <= maxe) & (y >= minf) & (y <= maxf) ] = True
+    x = x[ incl ]
+    y = y[ incl ]
+    z = z[ incl ]
+    z = winsorize( z , limits=[w, w] )
+
+    #include/exclude here...
+    spec0( x,y,z,mine,maxe,minf,maxf)
 
 # --------------------------------------------------------------------------------
-def spec0( x , y , z ):
+def spec0( x , y , z , mine , maxe , minf, maxf ):
    xn = max(x) - min(x) + 1
    yn = np.unique(y).size
    zi, yi, xi = np.histogram2d(y, x, bins=(yn,xn), weights=z, density=False )
@@ -704,6 +838,7 @@ def spec0( x , y , z ):
    fig.set_figwidth(15)
    ax.set_xlabel('Epoch')
    ax.set_ylabel('Frequency (Hz)')
+   ax.set(xlim=(mine, maxe), ylim=(minf,maxf) )
    p1 = ax.pcolormesh(xi, yi, zi, cmap = 'turbo' )
    fig.colorbar(p1)
    ax.margins(0.1)
