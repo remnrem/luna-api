@@ -71,6 +71,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "clear" , &lunapi_t::clear )
 
     .def( "silence", &lunapi_t::silence )
+    .def( "is_silenced" , &lunapi_t::is_silenced )
 
     .def( "flush" , &lunapi_t::flush )
     
@@ -85,9 +86,11 @@ PYBIND11_MODULE(lunapi0, m) {
 	 "Show all option values" )
     
     .def("clear_opt",&lunapi_t::dropvar,
-		"Clear an option" )
+	 "Clear an option" )
     .def("clear_opts",&lunapi_t::dropvars,
-		"Clear all set options" )
+	 "Clear options" )
+    .def("clear_all_opts",&lunapi_t::dropallvars,
+	 "Clear all options" )
 
     .def("clear_ivars",&lunapi_t::clear_ivars,
 	 "Clear all individual-variables")
