@@ -1,7 +1,7 @@
 """lunapi1 module provides a high-level convenience wrapper around lunapi0 module functions."""
 
 # Luna Python wrapper
-# v0.1, 21-Jan-2024
+# v0.0.5, 5-Feb-2024
 
 import lunapi.lunapi0 as _luna
 import pandas as pd
@@ -17,7 +17,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v0.0.4"
+lp_version = "v0.0.5"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -40,13 +40,13 @@ class proj:
    # single static engine class
    eng = _luna.inaugurate()
    
-   def __init__(self):
+   def __init__(self, verbose = True ):
       self.n = 0
-      print( "initiated lunapi",lp_version,proj.eng ,"\n" )
+      if verbose: print( "initiated lunapi",lp_version,proj.eng ,"\n" )
       self.silence( False )
       self.eng = _luna.inaugurate()
       
-   def retire():
+   def retire(self):
       """Retires an existing Luna engine generated via proj()"""
       return _luna.retire()
    
@@ -142,12 +142,18 @@ class proj:
 
 
    #------------------------------------------------------------------------
-   def silence(self, b = True ):
+   def silence(self, b = True , verbose = False ):
       """Toggles the output mode on/off"""
-      
-      if b: print( 'silencing console outputs' )
-      else: print( 'enabling console outputs' )
+      if verbose:
+         if b: print( 'silencing console outputs' )
+         else: print( 'enabling console outputs' )
       proj.eng.silence(b)
+
+   #------------------------------------------------------------------------                                                                                                                                                            
+   def is_silenced(self, b = True ):
+      """Reports on whether log is silenced"""
+      return proj.eng.is_silenced()
+      
       
    #------------------------------------------------------------------------
    def flush(self):
@@ -163,8 +169,14 @@ class proj:
          if type(key) is not list: key = [ key ]
          return proj.eng.get_opt( key )
       else:         
-         proj.eng.opt( key, value )
+         proj.eng.opt( key, str( value ) )
 
+   #------------------------------------------------------------------------                                                                                                                                                            
+   def varmap(self,d):
+      """Sets project-level arguments/options"""
+      if isinstance(d, dict):
+         for k, v in d.items():
+            self.var(k,v)
          
    #------------------------------------------------------------------------
    def vars(self):
@@ -178,9 +190,15 @@ class proj:
       proj.eng.clear_opt(key)
 
    #------------------------------------------------------------------------
-   def clear_vars(self):
+   def clear_vars(self,key):
+      """Clear a project-level option/variable"""
+      if type(key) is not list: key = [ key ]
+      proj.eng.clear_opts(key)
+
+   #------------------------------------------------------------------------
+   def clear_all_vars(self):
       """Clear all project-level options/variables"""
-      proj.eng.clear_opts()
+      proj.eng.clear_all_opts()
 
    #------------------------------------------------------------------------   
    def clear_ivars(self):
@@ -209,7 +227,7 @@ class proj:
    #------------------------------------------------------------------------      
    def get_annots(self,x):
       """Return the annotation filenames for an individual from the sample-list"""
-      if ( isinstance(n,int) ):
+      if ( isinstance(x,int) ):
          return proj.eng.get_annot(x)
       else:
          return proj.eng.get_annot(proj.eng.get_n(x))
@@ -246,7 +264,7 @@ class proj:
       
       if self.empty_result_set(): return None
       t = pd.DataFrame( proj.eng.strata() )      
-      t.columns = ["Command","Stata"]
+      t.columns = ["Command","Stratum"]
       return t
 
    #------------------------------------------------------------------------
@@ -262,7 +280,7 @@ class proj:
    def variables( self, cmd , strata = 'BL' ):
       """Return a list of all variables for an output table"""
       if self.empty_result_set(): return None
-      return proj.eng.variables( cmd , strata )
+      return proj.eng.vars( cmd , strata )
 
 
 # 
@@ -300,13 +318,25 @@ class proj:
       self.var( 'do_edger' , '1' if do_edger else '0' )
       self.var( 'do_reref' , '1' if do_reref else '0' )
       self.var( 'no_filter' , '1' if no_filter else '0' )
+
       if s != None: self.var( 's' , s )
+      else: self.clear_var( 's' )
+
       if m != None: self.var( 'm' , m )
+      else: self.clear_var( 'm' )
+
       if s1 != None: self.var( 's1' , s1 )
-      if s2 != None: self.var( 's2' , s2 )
-      if m1 != None: self.var( 'm1' , m1 )
-      if m2 != None: self.var( 'm2' , m2 )
+      else: self.clear_var( 's1' )
       
+      if s2 != None: self.var( 's2' , s2 )
+      else: self.clear_var( 's2' )
+      
+      if m1 != None: self.var( 'm1' , m1 )
+      else: self.clear_var( 'm1' )
+      
+      if m2 != None: self.var( 'm2' , m2 )
+      else: self.clear_var( 'm2' )
+            
       # get either one- or two-channel mode Luna script from POPS folder
       twoch = s1 != None and s2 != None;
       if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
@@ -316,9 +346,7 @@ class proj:
       self.eval( cmdstr )
 
       # return of results
-      res = self.table( 'POPS' , 'E' )
-      res = res[ ["PP_N1","PP_N2","PP_N3","PP_R","PP_W" ]  ]
-      return res
+      return self.table( 'POPS' )
 
 
    # --------------------------------------------------------------------------------
@@ -331,10 +359,12 @@ class proj:
 
       """
       if path == None: path = resources.MODEL_PATH
+      if type( cen ) is list: cen = ','.join( cen )
       self.var( 'cen' , cen )
       self.var( 'mpath' , path )
       self.var( 'th' , str(th) )
-      return self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
+      self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
+      return self.table( 'PREDICT' )
 
 
 
@@ -388,9 +418,16 @@ class inst:
    #------------------------------------------------------------------------      
    def ivar( self , key , value = None ):
       """Set or get an individual-level variable"""
-      if value != None: self.edf.ivar( key , value )
+      if value != None: self.edf.ivar( key , str(value) )
       else: return self.edf.get_ivar( key )
          
+   #------------------------------------------------------------------------                                                                                                                                                            
+   def ivarmap(self,d):
+      """Sets individual-level variables"""
+      if isinstance(d, dict):
+         for k, v in d.items():
+            self.ivar(k,v)
+
    #------------------------------------------------------------------------      
    def ivars( self ):
       """Return all individual-level variables"""
@@ -403,6 +440,24 @@ class inst:
       if len( t ) == 0: return t
       t.columns = ["Channels"]
       return t
+
+   #------------------------------------------------------------------------      
+   def chs( self ):
+      """Returns of dataframe of current channels"""
+      t = pd.DataFrame( self.edf.channels() )
+      if len( t ) == 0: return t
+      t.columns = ["Channels"]
+      return t
+
+   #------------------------------------------------------------------------      
+   def headers(self):
+      """Return channel header info"""
+      _proj = proj(False)
+      silence_mode = _proj.is_silenced()
+      _proj.silence(True,False)
+      df = self.proc( "HEADERS" )[ 'HEADERS: CH' ]
+      _proj.silence( silence_mode , False )
+      return df
 
    #------------------------------------------------------------------------   
    def annots( self ):
@@ -435,7 +490,7 @@ class inst:
       """Return a dataframe of command/strata pairs from the output set"""
       if ( self.empty_result_set() ): return None
       t = pd.DataFrame( self.edf.strata() )
-      t.columns = ["Command","Stata"]
+      t.columns = ["Command","Stratum"]
       return t
 
    #------------------------------------------------------------------------
@@ -465,18 +520,30 @@ class inst:
       return self.edf.s2i( secs )
 
    # --------------------------------------------------------------------------------
-   def data( self, chs , annots , time = False ):
+   def data( self, chs , annots = None , time = False ):
       """Returns all data for certain channels and annotations"""
+      if type( chs ) is not list: chs = [ chs ]
+      if annots != None:
+         if type( annots ) is not list: annots = [ annots ]
+      if annots == None: annots = [ ]
       return self.edf.data( chs , annots , time )
 
    # --------------------------------------------------------------------------------
-   def slice( self, intervals, chs , annots , time = False ):
+   def slice( self, intervals, chs , annots = None , time = False ):
       """Return signal/annotation data aggregated over a set of intervals"""
+      if type( chs ) is not list: chs = [ chs ]
+      if annots != None:
+         if type( annots ) is not list: annots = [ annots ]
+      if annots == None: annots = [ ]
       return self.edf.slice( intervals, chs , annots , time )
 
    # --------------------------------------------------------------------------------   
-   def slices( intervals, chs , annots , time = False ):
+   def slices( self, intervals, chs , annots = None , time = False ):
       """Return a series of signal/annotation data objects for each requested interval"""
+      if type( chs ) is not list: chs = [ chs ]
+      if annots != None:
+         if type( annots ) is not list: annots = [ annots ]
+      if annots == None: annots = [ ]
       return self.edf.slices( intervals, chs , annots , time )
    
    # --------------------------------------------------------------------------------
@@ -504,7 +571,12 @@ class inst:
 
    
    # --------------------------------------------------------------------------------
-   def pops( self, chs , path = None , lib = None , edger = True ):
+   def pops( self, s = None, s1 = None , s2 = None,
+             path = None , lib = None ,
+             do_edger = True ,
+             no_filter = False ,
+             do_reref = False ,
+             m = None , m1 = None , m2 = None ):
       """Run the POPS stager"""
 
       if path == None: path = resources.POPS_PATH
@@ -514,63 +586,45 @@ class inst:
       if not os.path.isdir( path ):         
          return 'could not open POPS resource path ' + path 
 
-      # e.g. basic form (+ EDGER)
-      # luna edfs/learn-nsrr01.edf -s 'COPY sig=EEG  tag=FLT
-      #                                FILTER sig=EEG_FLT bandpass=0.3,35  tw=0.2 ripple=0.01
-      #                                COPY sig=EEG_FLT  tag=NORM
-      #                                ROBUST-NORM sig=EEG_FLT_NORM epoch winsor=0.002
-      #                                POPS path=.../pops lib=s2 alias=CEN,ZEN|EEG_FLT,EEG_FLT_NORM'
+      if s == None and s1 == None:
+         print( 'must set s or s1 and s2 to EEGs' )
+         return
 
-      cmdstr = ""
-      
-      # assume single channel
-      # include 'edger tool'
-      if type( chs ) is str:
-         cmdstr = 'COPY sig=' + chs + ' tag=FLT'
-         cmdstr = cmdstr + ' & FILTER  sig=' + chs + '_FLT bandpass=0.3,35  tw=0.2 ripple=0.01 ' 
-         cmdstr = cmdstr + ' & COPY sig=' + chs + '_FLT tag=NORM' 
-         cmdstr = cmdstr + ' & ROBUST-NORM sig=' + chs + '_FLT_NORM epoch winsor=0.002 ' 
-
-         if edger:
-            cmdstr = cmdstr + ' & EDGER sig=' + chs + '_FLT cache=ec1' 
-            cmdstr = cmdstr + ' & POPS cache=ec1 path=' + path + ' lib=' + lib + ' alias=CEN,ZEN|' + chs + '_FLT,' + chs + '_FLT_NORM ' 
-         else:
-            cmdstr = cmdstr + ' & POPS path=' + path + ' lib=' + lib + ' alias=CEN,ZEN|' + chs + '_FLT,' + chs + '_FLT_NORM ' 
-
-      # two-channel equivalence case
-      if type( chs ) is list and len( chs ) == 2:
-         cmdstr = 'COPY sig=' + chs[0] + ' tag=FLT'
-         cmdstr = cmdstr + ' & COPY sig=' + chs[1] + ' tag=FLT'
-         cmdstr = cmdstr + ' & FILTER  sig=' + chs[0] + '_FLT bandpass=0.3,35  tw=0.2 ripple=0.01 ' 
-         cmdstr = cmdstr + ' & FILTER  sig=' + chs[1] + '_FLT bandpass=0.3,35  tw=0.2 ripple=0.01 ' 
-         cmdstr = cmdstr + ' & COPY sig=' + chs[0] + '_FLT tag=NORM' 
-         cmdstr = cmdstr + ' & COPY sig=' + chs[1] + '_FLT tag=NORM' 
-         cmdstr = cmdstr + ' & ROBUST-NORM sig=' + chs[0] + '_FLT_NORM epoch winsor=0.002 ' 
-         cmdstr = cmdstr + ' & ROBUST-NORM sig=' + chs[1] + '_FLT_NORM epoch winsor=0.002 ' 
-
-         if edger:
-            cmdstr = cmdstr + ' & EDGER sig=' + chs[0] + '_FLT,' + chs[1] + '_FLT cache=ec1'
-            cmdstr = cmdstr + ' & POPS cache=ec1 path=' + path + ' lib=' + lib \
-            + ' alias=CEN,ZEN|' + chs[0] + '_FLT,' + chs[0] + '_FLT_NORM ' \
-            + ' equiv=CEN,ZEN|' + chs[1] + '_FLT,' + chs[1] + '_FLT_NORM '
-         else:
-            cmdstr = cmdstr + ' & POPS path=' + path + ' lib=' + lib \
-            + ' alias=CEN,ZEN|' + chs[0] + '_FLT,' + chs[0] + '_FLT_NORM ' \
-            + ' equiv=CEN,ZEN|' + chs[1] + '_FLT,' + chs[1] + '_FLT_NORM '
+      if ( s1 == None ) != ( s2 == None ):
+         print( 'must set s or s1 and s2 to EEGs' )
+         return
          
+      # set options
+      self.ivar( 'mpath' , path )
+      self.ivar( 'lib' , lib )
+      self.ivar( 'do_edger' , '1' if do_edger else '0' )
+      self.ivar( 'do_reref' , '1' if do_reref else '0' )
+      self.ivar( 'no_filter' , '1' if no_filter else '0' )
+      if s != None: self.ivar( 's' , s )
+      if m != None: self.ivar( 'm' , m )
+      if s1 != None: self.ivar( 's1' , s1 )
+      if s2 != None: self.ivar( 's2' , s2 )
+      if m1 != None: self.ivar( 'm1' , m1 )
+      if m2 != None: self.ivar( 'm2' , m2 )
+      
+      # get either one- or two-channel mode Luna script from POPS folder
+      twoch = s1 != None and s2 != None;
+      if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
+      else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
+      
       # run the command
       self.proc( cmdstr )
 
       # return of results
-      res = self.table( 'POPS' , 'E' )
-      res = res[ ["PP_N1","PP_N2","PP_N3","PP_R","PP_W" ]  ]
-      return res
+      return self.table( 'POPS' , 'E' )
 
 
    # --------------------------------------------------------------------------------
    def predict_SUN2019( self, cen , age = None , th = '3' , path = None ):
       """Run SUN2019 prediction model for a single individual"""
       if path == None: path = resources.MODEL_PATH
+      if type( cen ) is list : cen = ','.join( cen )
+      
       # set ivars
       if age == None:
          print( 'need to set age ivar' )
@@ -580,15 +634,17 @@ class inst:
       self.ivar( 'mpath' , path )
       self.ivar( 'th' , str(th) )
       self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
+      return self.table( 'PREDICT' )
 
    # --------------------------------------------------------------------------------   
-   def stages():
-      """Return of alist of stages"""   
-      #    p.proc( "STAGE" )[ 'STAGE: E' ]
-      #    hyp = lp.table( p, "STAGE" , "E" ) 
-      #   p.silence( False )
-      # return hyp
-
+   def stages(self):
+      """Return of a list of stages"""   
+      _proj = proj(False)
+      silence_mode = _proj.is_silenced()
+      _proj.silence(True,False)
+      hyp = self.proc( "STAGE" )[ 'STAGE: E' ]
+      _proj.silence( silence_mode , False )
+      return hyp
 
    
 # --------------------------------------------------------------------------------
@@ -615,7 +671,7 @@ def strata( ts ):
       return r
 
    t = pd.DataFrame( self.edf.strata() )
-   t.columns = ["Command","Stata"]
+   t.columns = ["Command","Stratum"]
    return t
 
 # --------------------------------------------------------------------------------
@@ -633,11 +689,11 @@ def tables( ts ):
    for cmd in ts:
       strata = ts[cmd].keys()
       for stratum in strata:
-         r[ cmd + ": " + stratum ] = table2df( ts[cmd][stratum] ) 
+         r[ cmd + ": " + stratum ] = _table2df( ts[cmd][stratum] ) 
       return r
 
 # --------------------------------------------------------------------------------
-def table2df( r ):
+def _table2df( r ):
    """Utility function to format tables"""
    t = pd.DataFrame( r[1] ).T
    t.columns = r[0]
@@ -647,7 +703,7 @@ def table2df( r ):
 def show( dfs ):
    """Utility function to format tables"""
    for title , df in dfs.items():
-      print( color.BOLD + color.DARKCYAN + title + color.END )
+      print( _color.BOLD + _color.DARKCYAN + title + _color.END )
       ICD.display(df)
  
 # --------------------------------------------------------------------------------
@@ -660,7 +716,7 @@ def version():
    """Return version of lunapi & luna"""
    return { "lunapi": lp_version , "luna": _luna.version() }
 
-class color:
+class _color:
    PURPLE = '\033[95m'
    CYAN = '\033[96m'
    DARKCYAN = '\033[36m'
@@ -804,13 +860,13 @@ def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
 
 
 # --------------------------------------------------------------------------------
-def spec(df , ch = None , mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
+def spec(df , ch = None , var = 'PSD' , mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
     """Returns a spectrogram from a PSD or MTM epoch table (CH_E_F)"""
     if ch != None: df = df.loc[ df['CH'] == ch ]
     if len(df) == 0: return
     x = df['E'].to_numpy(dtype=int)
     y = df['F'].to_numpy(dtype=float)
-    z = df['PSD'].to_numpy(dtype=float)
+    z = df[ var ].to_numpy(dtype=float)
     if mine == None: mine = min(x)
     if maxe == None: maxe = max(x)
     if minf == None: minf = min(y)
@@ -845,33 +901,40 @@ def spec0( x , y , z , mine , maxe , minf, maxf ):
    plt.show()
 
 # --------------------------------------------------------------------------------   
-def ltopo_heat(ch_names, ch_vals,  th_vals, lmts="default",
-               sz=70, colormap = "bwr", title = "", 
-               th=0.05, rimcolor="black", lab = "dB"):
+def topo_heat(chs, z,  ths = None , th=0.05 ,
+              topo = None , 
+              lmts= None , sz=70, colormap = "bwr", title = "", 
+              rimcolor="black", lab = "dB"):
     """Generate a channel-wise topoplot"""
-    
-    topo = default_xy()
+
+    z = np.array(z)
+    if ths != None: ths = np.array(ths)
+    if topo == None: topo = default_xy()
+
     xlim = [-0.6, 0.6]
     ylim = [-0.6, 0.6]
-    rng = [np.min(ch_vals), np.max(ch_vals)]
-    if lmts == "default":
-        lmts = rng
-    else:
-        assert lmts[0] <= rng[0] <= lmts[1] and lmts[0] <= rng[1] <= lmts[1], "channel values are out of specified limits"
+    rng = [np.min(z), np.max(z)]
+
+    if lmts == None : lmts = rng
+    else: assert lmts[0] <= rng[0] <= lmts[1] and lmts[0] <= rng[1] <= lmts[1], "channel values are out of specified limits"
    
-    assert len(set(topo['CH']).intersection(ch_names)) > 0, "no matching channels"
+    assert len(set(topo['CH']).intersection(chs)) > 0, "no matching channels"
     
-    ch_names = ch_names.apply(lambda x: x.upper())    
-    topo = topo[topo['CH'].isin(ch_names)]
+    chs = chs.apply(lambda x: x.upper())    
+    topo = topo[topo['CH'].isin(chs)]
     topo["vals"] = np.nan
     topo["th_vals"] = np.nan
     topo["rims"] = 0.5
 
     for ix, ch in topo.iterrows():
-        topo.loc[ix,'vals'] = ch_vals[ch_names == ch["CH"]] 
-        topo.loc[ix,'th_vals'] = th_vals[ch_names == ch["CH"]] 
+        topo.loc[ix,'vals'] = z[chs == ch["CH"]]
+        if ths == None:
+           topo.loc[ix,'th_vals'] = 999;
+        else:              
+           topo.loc[ix,'th_vals'] = ths[chs == ch["CH"]] 
+
         if topo.loc[ix,'th_vals'] < th:
-            topo.loc[ix,'rims'] = 1.5
+           topo.loc[ix,'rims'] = 1.5
       
     fig, ax = plt.subplots()
     sc = ax.scatter(topo.loc[:,"X"], topo.loc[:,"Y"],cmap=colormap, 
@@ -898,7 +961,8 @@ def ltopo_heat(ch_names, ch_vals,  th_vals, lmts="default",
 #th_vals = np.random.uniform(0.06, 1, size=len(ch_names)) # vector of channel values
 #th_vals[ch_names == "O2"] = 0
 #lmts=[-4, 4]#"default"
-#ltopo_heat(ch_names, ch_vals, lmts=lmts, sz=70,
-#           colormap = "bwr", title = "DENSITY", th=0.05, th_vals = th_vals,
+#ltopo_heat(ch_names, ch_vals, th_vals = th_vals, th=0.05,
+#           lmts=lmts, sz=70,
+#           colormap = "bwr", title = "DENSITY", 
 #           rimcolor="black", lab = "n/min")
    
