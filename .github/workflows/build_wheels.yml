@@ -3,15 +3,13 @@ name: Build
 on: [ workflow_dispatch ]
 # push, pull_request]
 
-#        os: [ ubuntu-latest, macos-latest ]
-
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest ]
+        os: [ ubuntu-latest, macos-latest ]
 
     steps:
       - uses: actions/checkout@v4

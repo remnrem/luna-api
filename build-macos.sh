@@ -1,4 +1,6 @@
 
+cp CMakeLists.txt.MAC_x86 CMakeLists.txt
+
 cd ${GITHUB_WORKSPACE}
 mkdir depends
 
@@ -19,6 +21,7 @@ mkdir build
 cd build
 cmake -DBUILD_STATIC_LIB=ON  -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF ..
 make -j4
+cp ../lib_lightgbm.a /usr/local/lib/
 
 # luna-base
 cd ${GITHUB_WORKSPACE}/depends
