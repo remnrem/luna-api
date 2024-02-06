@@ -7,15 +7,12 @@ cd ${GITHUB_WORKSPACE}
 mkdir depends
 cd depends
 
-# libomp
-cp /usr/local/opt/libomp/lib/libomp.a .
-
 # FFTW
 curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
 cd fftw-3.3.10
-./configure
-make -j4
+./configure --with-pic
+make -j4 CFLAGS=-fPIC
 make install
 cp .libs/libfftw3.a ../
 cd ..
@@ -25,7 +22,7 @@ git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
 mkdir build
 cd build
-cmake -DBUILD_STATIC_LIB=ON ..
+cmake -DBUILD_STATIC_LIB=ON  -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF ..
 make -j4
 cd ..
 cp lib_lightgbm.a ../
