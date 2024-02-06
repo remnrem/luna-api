@@ -13,21 +13,23 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-include_directories("/depends/fftw-3.3.10" )
-include_directories("/depends/fftw-3.3.10/include/" )
-include_directories("/depends/luna-base/" )
-include_directories("/depends/luna-base/stats/" )
-include_directories("/depends/LightGBM/include/")
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10" )
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10/include/" )
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
 
-link_directories("/depends/")
+"$ENV{GITHUB_WORKSPACE}/${cmake_dir}"
+
+link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
 
-set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "/depends/libluna.a" )
-set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "/depends/lib_lightgbm.a" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "/depends/libfftw3.a" )
+set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libluna.a" )
+set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/lib_lightgbm.a" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libfftw3.a" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 

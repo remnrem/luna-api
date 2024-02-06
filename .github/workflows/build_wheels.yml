@@ -22,8 +22,10 @@ jobs:
            CIBW_BEFORE_ALL_LINUX: "sh build-linux.sh"
            CIBW_BEFORE_ALL_MACOS: "sh build-macos.sh"
            CIBW_BEFORE_ALL_WINDOWS: " "
+	with:
+	   output-dir: wheelhouse
 
       - uses: actions/upload-artifact@v3
         with:
-          name: Build
-          path: ./dist/*.whl
+          name: wheels
+          path: ./wheelhouse/*.whl
