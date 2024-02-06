@@ -32,6 +32,7 @@ tar -xzvf fftw-3.3.10.tar.gz
 cd fftw-3.3.10
 ./configure
 make -j4
+make install
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
@@ -54,4 +55,7 @@ echo "j2"
 ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
 echo "j3"
 ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include 
+
+echo "j4"
+ls -l /usr/local/include/
 
