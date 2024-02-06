@@ -18,7 +18,7 @@ wget -O macos-arm64.tar.gz "https://www.dropbox.com/scl/fi/5fe5tcbo7zvz5f1vrmtw9
 tar xzvf macos-arm64.tar.gz
 cp macos-arm64/*.a ${GITHUB_WORKSPACE}/depends/
 
-brew install fftw
+#brew install fftw
 
 pwd
 
@@ -40,6 +40,12 @@ cd ${GITHUB_WORKSPACE}/depends/
 git clone https://github.com/remnrem/luna-base.git
 cp libluna.a luna-base/
 
-cd ${GITHUB_WORKSPACE}/depends
+echo "Final"
+cd ${GITHUB_WORKSPACE}
 ls -l
+
+echo "j1"
+ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
+echo "j2"
+ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include 
 
