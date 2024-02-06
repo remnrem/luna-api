@@ -4,6 +4,8 @@
 
 cd ${GITHUB_WORKSPACE}
 
+cp CMakeLists.txt.LINUX CMakeLists.txt
+
 mkdir /depends
 cd /depends
 
