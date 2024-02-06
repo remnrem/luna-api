@@ -13,7 +13,8 @@ cd ${GITHUB_WORKSPACE}
 mkdir depends
 
 # get libs: 
-wget -O macos-arm64.tar.gz "https://www.dropbox.com/scl/fi/5fe5tcbo7zvz5f1vrmtw9/macos-arm64.tar.gz?rlkey=ncn72rme3sami0dk538uhu52x&dl=0"
+
+wget -O macos-arm64.tar.gz "https://www.dropbox.com/scl/fi/xau8qukx95v13qcoei8zw/macos-arm64.tar.gz?rlkey=6kwl2gg48tgqayzmfo4coduvq&dl=0"
 tar xzvf macos-arm64.tar.gz
 cp macos-arm64/*.a ${GITHUB_WORKSPACE}/depends/
 
