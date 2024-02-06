@@ -1,24 +1,37 @@
 # Installation notes
 
-## Docker
-
-See notes at [https://github.com/remnrem/luna-api-notebooks](https://github.com/remnrem/luna-api-notebooks) for installing the Docker version of lunapi (based on a JupyterLab image).    This is currently the only option for Windows users.
+There are three ways to obtain _lunapi_:
 
 ## pip
 
 We are aiming to support binary wheels for Linux and macOS (arm64 and
 amd64).  If the following is able to find a matching binary wheel for
-your platform, you can use that.
+your platform and Python version (3.8-3.12 currently), you can use
+that.
 
 ```
 pip install lunapi 
 ```
 
+It is possible the support for Windows will be added downstream, but
+that is not likely to happen soon: i.e. Windows users should look to
+the Docker image (below).
+
+
+## Docker
+
+See notes at
+[https://github.com/remnrem/luna-api-notebooks](https://github.com/remnrem/luna-api-notebooks)
+for installing the Docker version of _lunapi_ (based on a JupyterLab
+image).  _This is currently the only option for Windows users._
+
+
 ## Manual build
 
 We cannot currently provide support for manual builds - but if you
-wish to follow these basic steps and have a working knowledge of
-compiling software, this should work on Linux/macOS platforms.
+wish to follow these rough steps and have a working knowledge of
+compiling software, this should work on most Linux/macOS platforms with
+typical Python installations, etc.
 
  - follow the instructions [here](https://zzz.bwh.harvard.edu/luna/download/source/) for compiling Luna locally
  
