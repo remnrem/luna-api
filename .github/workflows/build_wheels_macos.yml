@@ -19,8 +19,10 @@ jobs:
         env:
            CIBW_BEFORE_ALL: "sh build-macos-arm64.sh"
            CIBW_ARCHS_MACOS: "arm64"
+        with:
+           output-dir: wheelhouse
    
       - uses: actions/upload-artifact@v3
         with:
-          name: Build_arm64
-          path: ./dist/*.whl
+          name: wheels-macos-arm64
+          path: ./wheelhouse/*.whl
