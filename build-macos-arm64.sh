@@ -10,7 +10,6 @@ echo "GITHUB_WORKSPACE = "
 echo ${GITHUB_WORKSPACE}
 
 cd ${GITHUB_WORKSPACE}
-
 mkdir depends
 
 # get libs: 
@@ -30,6 +29,9 @@ cd ${GITHUB_WORKSPACE}/depends
 # FFTW
 wget https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
+cd fftw-3.3.10
+./configure
+make -j4
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
@@ -44,8 +46,12 @@ echo "Final"
 cd ${GITHUB_WORKSPACE}
 ls -l
 
+echo "j0"
+ls -l /Users/runner/work/luna-api/luna-api/
 echo "j1"
-ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
+ls -l /Users/runner/work/luna-api/luna-api/depends
 echo "j2"
+ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
+echo "j3"
 ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include 
 
