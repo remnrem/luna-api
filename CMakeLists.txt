@@ -18,6 +18,7 @@ include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10/include/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
+include_directories("/usr/local/include/")
 
 link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
 
