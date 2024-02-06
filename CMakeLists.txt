@@ -19,8 +19,6 @@ include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
 
-"$ENV{GITHUB_WORKSPACE}/${cmake_dir}"
-
 link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
