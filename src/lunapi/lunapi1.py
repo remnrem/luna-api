@@ -17,7 +17,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v0.0.5"
+lp_version = "v0.0.6"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -113,6 +113,11 @@ class proj:
       return proj.eng.nobs()
 
 
+   #------------------------------------------------------------------------
+      
+   def reset(self):
+      """ Drop Luna problem flag """
+      proj.eng.reset()
 
    #------------------------------------------------------------------------
    
@@ -294,7 +299,10 @@ class proj:
              do_edger = True ,
              no_filter = False ,
              do_reref = False ,
-             m = None , m1 = None , m2 = None ):
+             m = None , m1 = None , m2 = None,
+             lights_off = '.' , lights_on = '.' ,
+             ignore_obs = False, 
+             args = '' ):
       """Run the POPS stager"""
 
       if path == None: path = resources.POPS_PATH
@@ -318,10 +326,12 @@ class proj:
       self.var( 'do_edger' , '1' if do_edger else '0' )
       self.var( 'do_reref' , '1' if do_reref else '0' )
       self.var( 'no_filter' , '1' if no_filter else '0' )
-
+      self.var( 'LOFF' , lights_off )
+      self.var( 'LON' , lights_on )
+      
       if s != None: self.var( 's' , s )
       else: self.clear_var( 's' )
-
+      
       if m != None: self.var( 'm' , m )
       else: self.clear_var( 'm' )
 
@@ -341,6 +351,14 @@ class proj:
       twoch = s1 != None and s2 != None;
       if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
       else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
+
+      # swap in any additional options to POPS
+      if ignore_obs is True:
+         args = args + ' ignore-obs-staging';
+         if do_edger is True:
+            cmdstr = cmdstr.replace( 'EDGER' , 'EDGER all' )
+      if args != '':
+            cmdstr = cmdstr.replace( 'POPS' , 'POPS ' + args + ' ')
       
       # run the command
       self.eval( cmdstr )
@@ -414,6 +432,13 @@ class inst:
    def refresh( self ):
       """Refresh an attached EDF"""
       self.edf.refresh()
+      # also need to reset Luna problem flag
+      # note: current kludge: problem is proj-wide
+      #       so this will not play well w/ multiple EDFs
+      # todo: implement inst-specific prob flag
+      
+      _proj = proj(False)
+      _proj.reset();
 
    #------------------------------------------------------------------------      
    def ivar( self , key , value = None ):
@@ -569,6 +594,81 @@ class inst:
    #
    # --------------------------------------------------------------------------------
 
+
+   # --------------------------------------------------------------------------------
+   def freeze( self , f ):
+      self.eval( 'FREEZE ' + f )
+
+   # --------------------------------------------------------------------------------
+   def thaw( self , f , remove = False ):
+      if remove:
+         self.eval( 'THAW tag=' + f + 'remove' )
+      else:
+         self.eval( 'THAW ' + f )
+
+   # --------------------------------------------------------------------------------
+   def empty_freezer( self ):
+      self.eval( 'CLEAN-FREEZER' )
+      
+   # --------------------------------------------------------------------------------
+   def mask( self , f = None ):
+      if f == None: return
+      if type(f) is not list: f = [ f ]
+      [ self.eval( 'MASK ' + _f ) for _f in f ]
+      self.eval( 'RE' )   
+
+   
+   # --------------------------------------------------------------------------------
+   def segments( self ):
+      self.eval( 'SEGMENTS' )
+      return self.table( 'SEGMENTS' , 'SEG' )
+   
+   # --------------------------------------------------------------------------------
+   def epoch( self , f = '' ):
+      self.eval( 'EPOCH ' + f )
+
+
+   # --------------------------------------------------------------------------------
+   def epochs( self ):
+      self.eval( 'EPOCH table' )                
+      df = self.table( 'EPOCH' , 'E' )
+      df = df[[ 'E', 'E1', 'LABEL', 'HMS', 'START','STOP','DUR' ]]
+      #df = df.drop(columns = ['ID','TP','MID','INTERVAL'] )
+      return df
+      
+   # --------------------------------------------------------------------------------
+   def psd( self, ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , xlines = None , ylines = None ):
+      """Generates a PSD plot (from PSD or MTM)"""
+      if ch == None: return
+      if type(ch) is not list: ch = [ ch ]
+
+      if var == 'PSD':
+         self.eval( 'PSD spectrum dB sig=' + ','.join(ch) )
+         df = self.table( 'PSD' , 'CH_F' )
+      else:
+         self.eval( 'MTM tw=15 dB sig=' + ','.join(ch) )
+         df = self.table( 'MTM' , 'CH_F' )
+         
+      psd( df = df , ch = ch , var = var ,
+           minf = minf , maxf = maxf , minp = minp , maxp = maxp ,
+           xlines = xlines , ylines = ylines )
+      
+    
+   # --------------------------------------------------------------------------------
+   def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = None , w = 0.025 ):
+      """Generates a PSD spectrogram (from PSD or MTM)"""
+      if ch == None: return
+      if type(ch) is not list: ch = [ ch ]
+
+      if var == 'PSD':
+         self.eval( 'PSD epoch-spectrum dB sig=' + ','.join(ch) )
+         df = self.table( 'PSD' , 'CH_E_F' )
+      else:
+         self.eval( 'MTM epoch-spectra epoch epoch-output dB tw=15 sig=' + ','.join(ch) )
+         df = self.table( 'MTM' , 'CH_E_F' )
+         
+      spec( df = df , ch = None , var = var ,
+            mine = mine , maxe = maxe , minf = minf , maxf = maxf , w = w )
    
    # --------------------------------------------------------------------------------
    def pops( self, s = None, s1 = None , s2 = None,
@@ -576,7 +676,10 @@ class inst:
              do_edger = True ,
              no_filter = False ,
              do_reref = False ,
-             m = None , m1 = None , m2 = None ):
+             m = None , m1 = None , m2 = None ,
+             lights_off = '.' , lights_on = '.' ,
+             ignore_obs = False, 
+             args = '' ):
       """Run the POPS stager"""
 
       if path == None: path = resources.POPS_PATH
@@ -600,6 +703,9 @@ class inst:
       self.ivar( 'do_edger' , '1' if do_edger else '0' )
       self.ivar( 'do_reref' , '1' if do_reref else '0' )
       self.ivar( 'no_filter' , '1' if no_filter else '0' )
+      self.ivar( 'LOFF' , lights_off )
+      self.ivar( 'LON' , lights_on )
+
       if s != None: self.ivar( 's' , s )
       if m != None: self.ivar( 'm' , m )
       if s1 != None: self.ivar( 's1' , s1 )
@@ -611,6 +717,15 @@ class inst:
       twoch = s1 != None and s2 != None;
       if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
       else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
+
+      # swap in any additional options to POPS
+      if ignore_obs is True:
+         args = args + ' ignore-obs-staging';
+         if do_edger is True:
+            cmdstr = cmdstr.replace( 'EDGER' , 'EDGER all' )
+      if args != '':
+         cmdstr = cmdstr.replace( 'POPS' , 'POPS ' + args + ' ')
+      
       
       # run the command
       self.proc( cmdstr )
@@ -853,10 +968,40 @@ def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
    plt.show()
 
 
+
+
 # --------------------------------------------------------------------------------
-# TODO: stage duration plot
-# TODO: NREM cycle plot
-# TODO: overview of hypnogram plot
+def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , 
+        xlines = None , ylines = None, dB = False ):
+    """Returns a PSD plot from PSD or MTM epoch table (CH_F)"""
+    if ch == None: return
+    if type( ch ) is not list: ch = [ ch ]
+    if type( xlines ) is not list and xlines != None: xlines = [ xlines ]
+    if type( ylines ) is not list and ylines != None: ylines = [ ylines ]
+    df = df[ df['CH'].isin(ch) ]
+    if len(df) == 0: return
+    f = df['F'].to_numpy(dtype=float)
+    p = df[var].to_numpy(dtype=float)
+    if dB is True: p = 10*np.log10(p)
+    cx = df['CH'].to_numpy(dtype=str)
+    if minp == None: minp = min(p)
+    if maxp == None: maxp = max(p)
+    if minf == None: minf = min(f)
+    if maxf == None: maxf = max(f)
+    incl = np.zeros(len(df), dtype=bool)
+    incl[ (f >= minf) & (f <= maxf) ] = True
+    f = f[ incl ]
+    p = p[ incl ]
+    cx = cx[ incl ] 
+    p[ p > maxp ] = maxp
+    p[ p < minp ] = minp
+    [ plt.plot(f[ cx == _ch ], p[ cx == _ch ] , label = _ch ) for _ch in ch ]
+    plt.legend()
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Power (dB)')
+    if xlines != None: [plt.axvline(_x, linewidth=1, color='gray') for _x in xlines ]
+    if ylines != None: [plt.axhline(_y, linewidth=1, color='gray') for _y in ylines ]
+    plt.show()
 
 
 # --------------------------------------------------------------------------------
@@ -881,6 +1026,7 @@ def spec(df , ch = None , var = 'PSD' , mine = None , maxe = None , minf = None,
     #include/exclude here...
     spec0( x,y,z,mine,maxe,minf,maxf)
 
+    
 # --------------------------------------------------------------------------------
 def spec0( x , y , z , mine , maxe , minf, maxf ):
    xn = max(x) - min(x) + 1

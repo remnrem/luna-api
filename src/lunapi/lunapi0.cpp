@@ -74,6 +74,8 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "is_silenced" , &lunapi_t::is_silenced )
 
     .def( "flush" , &lunapi_t::flush )
+
+    .def( "reset" , &lunapi_t::reset )
     
     .def("opt",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::var),
 		"Set an option value" )
@@ -167,7 +169,7 @@ PYBIND11_MODULE(lunapi0, m) {
     
     .def( "refresh", &lunapi_inst_t::refresh,
 	  "Reattach the current EDF")
-    .def( "drop", &lunapi_inst_t::refresh,
+    .def( "drop", &lunapi_inst_t::drop,
 	  "Drop the current EDF" )
     
     .def( "channels", &lunapi_inst_t::channels,
