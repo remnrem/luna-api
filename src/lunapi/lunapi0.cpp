@@ -176,7 +176,13 @@ PYBIND11_MODULE(lunapi0, m) {
 	  "Return a list of channel labels" )
     .def( "chs", &lunapi_inst_t::channels,
 	  "Return a list of channel labels" )
+    .def( "has_channels", &lunapi_inst_t::has_channels,
+	  "Return boolean for whether channels exist (with aliasing)" )
+    .def( "has", &lunapi_inst_t::has_channels,
+	  "Return boolean for whether channels exist (with aliasing)" )
 
+
+    
     .def( "annots", &lunapi_inst_t::annots,
 	  "Return a list of all annotations class labels" )
     .def( "fetch_annots", &lunapi_inst_t::fetch_annots,
@@ -184,6 +190,12 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "fetch_full_annots", &lunapi_inst_t::fetch_full_annots,
 	  "Return a list of intervals and meta-data for selected annotations" )
 
+    .def( "has_annots" , &lunapi_inst_t::has_annots,
+	  "Return boolean for whether annotations exist (with aliasing)" )
+
+    .def( "has_staging" , &lunapi_inst_t::has_staging,
+	  "Return boolean for whether valid staging annotations exist" )
+    
     .def( "stat" , &lunapi_inst_t::status,
 	  "Return a dict of key details on the current EDF" )
 
