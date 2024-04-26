@@ -2,7 +2,13 @@
 #sudo apt-get update
 #sudo apt-get -y install wget libomp-dev
 
+echo "PWD = $PWD"
+
+ls -lrt
+
 cd ${GITHUB_WORKSPACE}
+
+echo "PWD = $PWD"
 
 echo "startting"
 
