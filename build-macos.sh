@@ -4,12 +4,18 @@ cp CMakeLists.txt.MAC_x86 CMakeLists.txt
 cd ${GITHUB_WORKSPACE}
 mkdir depends
 
+# ensure (not present on macos-latest??)
+mkdir -p /usr/local/include
+mkdir -p /usr/local/bin
+mkdir -p /usr/local/lib
+
+
 # FFTW
 cd ${GITHUB_WORKSPACE}/depends
 wget https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
 cd fftw-3.3.10
-./configure --with-pic
+./configure --with-pic 
 make -j4  CFLAGS=-fPIC
 make install
 
