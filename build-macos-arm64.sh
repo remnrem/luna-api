@@ -43,9 +43,9 @@ cd ${GITHUB_WORKSPACE}/depends
 wget https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
 cd fftw-3.3.10
-./configure
+./configure --prefix=${GITHUB_WORKSPACE}/depends/
 make -j4
-#make install
+make install
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
