@@ -10,6 +10,8 @@
 
 BUNDLE="https://www.dropbox.com/scl/fi/dgia40biiyvw6i7t70jcj/macos-arm64.tar.gz?rlkey=pio8jutbqy2vqhcxpaxhjh2dn&dl=0"
 
+cp CMakeLists.txt.GITHUB CMakeLists.txt
+
 echo "ls"
 
 ls -l
