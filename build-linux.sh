@@ -4,10 +4,17 @@
 
 cd ${GITHUB_WORKSPACE}
 
+echo "startting"
+
+ls -lrt
 cp CMakeLists.txt.LINUX CMakeLists.txt
+
+echo "building /depends"
 
 mkdir /depends
 cd /depends
+
+echo "done"
 
 # FFTW
 curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
@@ -35,6 +42,9 @@ cd /depends/
 git clone https://github.com/remnrem/luna-base.git
 cd luna-base
 make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/
+
+echo "built libluna.a"
+ls -lrt
 cp libluna.a /depends/
 
 ls -l /depends
