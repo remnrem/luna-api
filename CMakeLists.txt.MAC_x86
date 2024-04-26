@@ -19,6 +19,7 @@ include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
 include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
 include_directories("/usr/local/include/")
+include_directories("$ENV{GITHUB_WORKSPACE}/depends/include/" )
 
 link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
 link_directories("/usr/local/lib/")
