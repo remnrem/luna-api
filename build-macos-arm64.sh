@@ -45,7 +45,7 @@ tar -xzvf fftw-3.3.10.tar.gz
 cd fftw-3.3.10
 ./configure
 make -j4
-make install
+#make install
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
@@ -58,6 +58,12 @@ cp libluna.a luna-base/
 
 echo "Final"
 cd ${GITHUB_WORKSPACE}
+
+ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include
+
+echo "Final"
+
+ls -lR depends
 
 #ls -l
 #ls -l /Users/runner/work/luna-api/luna-api/
