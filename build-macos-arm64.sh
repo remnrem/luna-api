@@ -1,4 +1,15 @@
 
+# location of file 'macos-arm64.tar.gz' that should contain static libraries
+# compiled on ARM64 for macOS:
+#
+#   libluna.a
+#   lib_lightgbm.a
+#   libfftw3.a
+#
+# (locally, these are stored on MGB dropbox share/luna-libs/macos-arm64.tar.gz)
+
+BUNDLE="https://www.dropbox.com/scl/fi/dgia40biiyvw6i7t70jcj/macos-arm64.tar.gz?rlkey=pio8jutbqy2vqhcxpaxhjh2dn&dl=0"
+
 echo "ls"
 
 ls -l
@@ -13,8 +24,7 @@ cd ${GITHUB_WORKSPACE}
 mkdir depends
 
 # get libs: 
-
-wget -O macos-arm64.tar.gz "https://www.dropbox.com/scl/fi/xau8qukx95v13qcoei8zw/macos-arm64.tar.gz?rlkey=6kwl2gg48tgqayzmfo4coduvq&dl=0"
+wget -O macos-arm64.tar.gz ${BUNDLE}
 tar xzvf macos-arm64.tar.gz
 cp macos-arm64/*.a ${GITHUB_WORKSPACE}/depends/
 
@@ -46,17 +56,10 @@ cp libluna.a luna-base/
 
 echo "Final"
 cd ${GITHUB_WORKSPACE}
-ls -l
 
-echo "j0"
-ls -l /Users/runner/work/luna-api/luna-api/
-echo "j1"
-ls -l /Users/runner/work/luna-api/luna-api/depends
-echo "j2"
-ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
-echo "j3"
-ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include 
-
-echo "j4"
-ls -l /usr/local/include/
-
+#ls -l
+#ls -l /Users/runner/work/luna-api/luna-api/
+#ls -l /Users/runner/work/luna-api/luna-api/depends
+#ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10
+#ls -l /Users/runner/work/luna-api/luna-api/depends/fftw-3.3.10/include 
+#ls -l /usr/local/include/

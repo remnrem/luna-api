@@ -13,26 +13,28 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10/include/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
+include_directories("depends/fftw-3.3.10" )
+include_directories("depends/fftw-3.3.10/include/" )
+include_directories("~/luna-base/" )
+include_directories("~/luna-base/stats/" )
+include_directories("depends/LightGBM/include/")
 include_directories("/usr/local/include/")
 
-link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
+link_directories("depends/")
 link_directories("/usr/local/lib/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
+add_library( omp STATIC IMPORTED GLOBAL )
 
-set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libluna.a" )
-set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/lib_lightgbm.a" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libfftw3.a" )
+set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libluna.a" )
+set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/lib_lightgbm.a" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libfftw3.a" )
+set_target_properties( omp     PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libomp.a" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm )
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp )
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )

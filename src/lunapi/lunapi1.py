@@ -1,7 +1,7 @@
 """lunapi1 module provides a high-level convenience wrapper around lunapi0 module functions."""
 
 # Luna Python wrapper
-# v0.0.5, 5-Feb-2024
+# v0.0.6, 26-Apr-2024
 
 import lunapi.lunapi0 as _luna
 import pandas as pd
@@ -72,8 +72,8 @@ class proj:
       return proj.eng.build_sample_list( args )
 
    
-   def sample_list(self, filename = None ):
-      """Reads a sample-list 'filenamne' and returns the number of observations
+   def sample_list(self, filename = None , path = None , df = True ):
+      """Reads a sample-list 'filenamne', optionally setting 'path' and returns the number of observations
 
       If filename is not defined, this returns the internal sample list
       as an object
@@ -83,6 +83,12 @@ class proj:
       filename : str
           optional filename of a sample-list to read
 
+      path : str
+          optional path to preprend to the sample-list when reading (sets the 'path' variable)
+
+      df : boolean
+          if returning a sample-list, return as a Pandas dataframe
+      
       Returns
       -------
       list
@@ -91,8 +97,18 @@ class proj:
     
       # return sample list
       if filename is None:
-         return proj.eng.get_sample_list()
+         sl = proj.eng.get_sample_list()
+         if df is True:
+            sl = pd.DataFrame( sl )
+            sl.columns = [ 'ID' , 'EDF', 'Annotations' ]
+            sl.index += 1 
+         return sl
 
+      # set path?
+      if path is not None:
+         print( "setting path to " , path )
+         self.var( 'path' , path )
+         
       # read sample list from file, after clearing anything present
       proj.eng.clear()
       self.n = proj.eng.read_sample_list( filename )
@@ -123,26 +139,27 @@ class proj:
    
    def inst( self, n ):
       """Generates a new instance"""
-      
+
+      # check bounds
+      if type(n) is int:
+         # use 1-based counts as inputs
+         n = n - 1
+         if n < 0 or n >= self.nobs():
+            print( "index out-of-bounds given sample list of " + str(self.nobs()) + " records" )
+            return
+            
+      # if the arg is a str that matches a sample-list
+      if type(n) is str:
+         sn = self.get_n(n)
+         if type(sn) is int: n = sn
+         
+      # return based on n (from sample-list) or string/empty (new instance)
       return inst(proj.eng.inst( n ))
       
 
    #------------------------------------------------------------------------
-      
-#   def import_db( self, filename ):
-#      """Reads a Luna 'destrat' output database"""      
-#      proj.eng.import_db( filename )
-
-   #------------------------------------------------------------------------
-#   def import_db( self, filename , ids ):
-#      """Reads a subset of individuals from a 'destrat' output database"""
-#      
-#      proj.eng.import_db( filename , ids )
-
-   #------------------------------------------------------------------------
    def clear(self):
       """Clears any existing project sample-list"""
-      
       proj.eng.clear()
 
 
@@ -154,7 +171,7 @@ class proj:
          else: print( 'enabling console outputs' )
       proj.eng.silence(b)
 
-   #------------------------------------------------------------------------                                                                                                                                                            
+   #------------------------------------------------------------------------
    def is_silenced(self, b = True ):
       """Reports on whether log is silenced"""
       return proj.eng.is_silenced()
@@ -251,6 +268,16 @@ class proj:
       """Evaluates one or more Luna commands for all sample-list individuals"""
       r = proj.eng.eval(cmdstr)
       return tables( r )
+
+   #------------------------------------------------------------------------ 
+   def silent_eval(self, cmdstr ):
+      """Silently evaluates one or more Luna commands for all sample-list individuals"""
+      silence_mode = self.is_silenced()
+      self.silence(True,False)
+      r = proj.eng.eval(cmdstr)
+      self.silence( silence_mode , False )
+      return tables( r )
+   
    
    #------------------------------------------------------------------------   
    def commands( self ):
@@ -506,6 +533,21 @@ class inst:
       # extract and return result tables
       return tables( r[1] ) 
 
+   #------------------------------------------------------------------------                                                                           
+   def silent_proc( self, cmdstr ):
+      """Silently evaluate one or more Luna commands (for internal use)"""
+      
+      _proj = proj(False)
+      silence_mode = _proj.is_silenced()
+      _proj.silence(True,False)
+      
+      r = self.edf.proc( cmdstr )
+
+      _proj.silence( silence_mode , False )
+
+      # extract and return result tables
+      return tables( r[1] )
+
    #------------------------------------------------------------------------   
    def empty_result_set( self ):
       return len( self.edf.strata()  ) == 0
@@ -754,14 +796,77 @@ class inst:
    # --------------------------------------------------------------------------------   
    def stages(self):
       """Return of a list of stages"""   
+      hyp = self.silent_proc( "STAGE" )
+      if type(hyp) is type(None): return
+      if 'STAGE: E' in hyp:
+         return hyp[ 'STAGE: E' ]
+      return
+
+   # --------------------------------------------------------------------------------   
+   def hypno(self):
+      """Hypnogram of sleep stages"""
+      if self.has_staging() is not True:
+         print( "no staging attached" )
+         return
+      return hypno( self.stages()[ 'STAGE' ] )
+
+   # --------------------------------------------------------------------------------
+   def has_staging(self):
+      """Returns boolean for whether staging is present"""
       _proj = proj(False)
       silence_mode = _proj.is_silenced()
       _proj.silence(True,False)
-      hyp = self.proc( "STAGE" )[ 'STAGE: E' ]
+      res = self.edf.has_staging()
       _proj.silence( silence_mode , False )
-      return hyp
+      return res
 
-   
+   # --------------------------------------------------------------------------------
+   def has_annots(self,anns):
+      """Returns boolean for which annotations are present"""
+      if anns == None: return
+      if type( anns ) is not list: anns = [ anns ]
+      return self.edf.has_annots( anns )
+
+   # --------------------------------------------------------------------------------
+   def has_annot(self,anns):
+      """Returns boolean for which annotations are present"""
+      return self.has_annots(anns)
+
+   # --------------------------------------------------------------------------------
+   def has_channels(self,ch):
+      """Return a boolean to indicate whether a given channel exists"""
+      if ch == None: return
+      if type(ch) is not list: ch = [ ch ]
+      return self.edf.has_channels( ch )
+
+   # --------------------------------------------------------------------------------
+   def has(self,ch):
+      """Return a boolean to indicate whether a given channel exists"""
+      if ch == None: return
+      if type(ch) is not list: ch = [ ch ]
+      return self.edf.has_channels( ch )
+
+   # --------------------------------------------------------------------------------                                                                  
+   def spec(self,ch,mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
+      """PSD given channel 'ch'"""
+      if type( ch ) is not str:
+         return
+      if all( self.has( ch ) ) is not True:
+         return
+      res = self.silent_proc( "PSD epoch-spectrum dB sig="+ch )[ 'PSD: CH_E_F' ]
+      return spec( res , ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
+
+   # --------------------------------------------------------------------------------
+   def psd(self, ch, minf = None, maxf = None, minp = None, maxp = None , xlines = None , ylines = None ):
+      """Spectrogram plot for a given channel 'ch'"""
+      if type( ch ) is not str:
+         return
+      if all( self.has( ch ) ) is not True:
+         return
+      res = self.silent_proc( "PSD spectrum dB sig="+ch )[ 'PSD: CH_F' ]
+      return psd( res , ch, minf = minf, maxf = maxf, minp = minp, maxp = maxp , xlines = xlines , ylines = ylines )
+
+      
 # --------------------------------------------------------------------------------
 #
 # misc non-member utilities functions
@@ -1032,8 +1137,9 @@ def spec0( x , y , z , mine , maxe , minf, maxf ):
    xn = max(x) - min(x) + 1
    yn = np.unique(y).size
    zi, yi, xi = np.histogram2d(y, x, bins=(yn,xn), weights=z, density=False )
-   counts, _, _ = np.histogram2d(y, x, bins=(yn,xn))
-   zi = zi / counts
+   counts, _, _ = np.histogram2d(y, x, bins=(yn,xn))   
+   with np.errstate(divide='ignore', invalid='ignore'):
+      zi = zi / counts
    zi = np.ma.masked_invalid(zi)
    fig, ax = plt.subplots()
    fig.set_figheight(2)
