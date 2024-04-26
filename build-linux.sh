@@ -2,7 +2,7 @@
 cp CMakeLists.txt.GITHUB CMakeLists.txt
 
 cd ${GITHUB_WORKSPACE}
-mkdir depends
+mkdir ${GITHUB_WORKSPACE}/depends
 
 cd ${GITHUB_WORKSPACE}/depends
 
@@ -25,7 +25,7 @@ cd build
 cmake -DBUILD_STATIC_LIB=ON  -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF ..
 make -j4
 cd ..
-cp lib_lightgbm.a /depends/
+cp lib_lightgbm.a ${GITHUB_WORKSPACE}/depends/
 
 # luna-base
 cd ${GITHUB_WORKSPACE}/depends/
