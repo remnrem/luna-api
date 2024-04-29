@@ -14,9 +14,9 @@ jobs:
         include:
           - os: ubuntu-latest
             architecture: AMD64
-          - os: macos-11
+          - os: macos-14
             architecture: ARM64
-          - os: macos-11
+          - os: macos-14
             architecture: x86_64
 
     steps:
@@ -26,9 +26,6 @@ jobs:
         uses: pypa/cibuildwheel@v2.16.2
         env:
            CIBW_ARCH: x86_64 ARM64
-           CIBW_BEFORE_ALL_LINUX: "sh build-linux.sh"
-           CIBW_BEFORE_ALL_MACOS: "sh build-macos.sh"
-           CIBW_BEFORE_ALL_WINDOWS: " "
         with:
            output-dir: wheelhouse
 
