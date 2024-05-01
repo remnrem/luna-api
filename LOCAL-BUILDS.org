@@ -1,0 +1,64 @@
+
+Internal notes for lunapi-related procedures
+(applicable only to local environment, i.e. MGB/ERIS)
+
+* Local compilation
+
+# create depends/ with static libraries: libluna, l_lightgbm, lfftw (and lomp) 
+# pip install .
+
+
+* Making binary wheels
+
+# manually trigger GHA build workflow (build_wheels.yml)
+#
+# currently, download artifacts
+#     (and that src/lunapi1.py defines a matching version: e.g. lp_version = "v0.0.6")
+#
+# validate & upload wheels to PyPI, e.g. 
+#   unzip wheels.zip
+#   python3 -m twine check --strict ./*.whl
+#   python3 -m twine upload ./*.whl
+# where:
+#      username = __token__
+#      password = API token (including pypi- prefix)
+
+# TODO: modify workflow to publish in PyPI directly
+
+
+* JupyterHub installation
+
+On ERIS2, to install for jupyterhub2.partners.org usage:
+
+  module load anaconda
+
+  conda create --prefix $HOME/envs/lunapi python=3.10.13
+
+  conda activate $HOME/envs/lunapi
+
+  conda install pandas ipykernel
+
+  pip install --user lunapi
+
+  python -m ipykernel install --user --name lunapi \
+    --env PYTHONPATH $HOME/envs/lunapi/lib/python3.10/site-packages/ \
+    --env LD_LIBRARY_PATH $HOME/envs/lunapi/lib --display-name "Python3 (lunapi)"
+
+
+    
+To upgrade when a new lunapi available:
+
+  module load anaconda
+
+  conda activate $HOME/envs/lunapi
+
+  pip install --upgrade --user lunapi
+
+* Docker lunapi
+
+...
+  
+
+
+
+  

@@ -1,7 +1,7 @@
 """lunapi1 module provides a high-level convenience wrapper around lunapi0 module functions."""
 
 # Luna Python wrapper
-# v0.0.6, 26-Apr-2024
+# v0.0.7, 1-May-2024
 
 import lunapi.lunapi0 as _luna
 import pandas as pd
@@ -17,7 +17,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v0.0.6"
+lp_version = "v0.0.7"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -182,46 +182,75 @@ class proj:
       """Internal command, to flush the output buffer"""
       proj.eng.flush()
 
+   # --------------------------------------------------------------------------------
+   def include( self, f ):
+      """Include options/variables from a @parameter-file"""
+      return proj.eng.include( f )
+
+
    #------------------------------------------------------------------------
-   def var(self,key=None,value=None):
-      """Set or return a project-level argument/option"""
-      if key == None:
+   def aliases( self ):
+      """Return a table of signal/annotation aliases"""
+      t = pd.DataFrame( proj.eng.aliases() )      
+      t.index = t.index + 1
+      if len( t ) == 0: return t
+      t.columns = ["Type", "Preferred", "Case-insensitive, sanitized alias" ]
+      with pd.option_context('display.max_rows', None,):   
+         display(t)
+
+   #------------------------------------------------------------------------
+   def var(self , key=None , value=None):
+      """Set or get project-level options(s)/variables(s)"""
+      return self.vars( key, value )
+
+   #------------------------------------------------------------------------
+   def vars(self , key=None , value=None):
+      """Set or get project-level options(s)/variables(s)"""
+
+      # return all vars?
+      if key is None:
          return proj.eng.get_all_opts()
-      if value == None:
-         if type(key) is not list: key = [ key ]
-         return proj.eng.get_opt( key )
-      else:         
-         proj.eng.opt( key, str( value ) )
 
-   #------------------------------------------------------------------------                                                                                                                                                            
-   def varmap(self,d):
-      """Sets project-level arguments/options"""
-      if isinstance(d, dict):
-         for k, v in d.items():
-            self.var(k,v)
+      # return one or more vars?
+      if value is None:
          
-   #------------------------------------------------------------------------
-   def vars(self):
-      """Return a dictionary of all project-level variables"""
-      return proj.eng.get_all_opts()
+         # return 1?
+         if type( key ) is str:
+            return proj.eng.get_opt( key )
 
-   
+         # return some?
+         if type( key ) is list:
+            return proj.eng.get_opts( key )
+
+      # set from a dict
+      if isinstance(key, dict):
+         for k, v in key.items():
+            self.vars(k,v)
+         return
+
+      # set a single pair
+      proj.eng.opt( key, str( value ) )
+
+            
    #------------------------------------------------------------------------
-   def clear_var(self,key):
-      """Clear a project-level option/variable"""
-      proj.eng.clear_opt(key)
+#   def clear_var(self,key):
+#      """Clear project-level option(s)/variable(s)"""
+#      self.clear_vars(key)
 
    #------------------------------------------------------------------------
-   def clear_vars(self,key):
-      """Clear a project-level option/variable"""
+   def clear_vars(self,key = None ):
+      """Clear project-level option(s)/variable(s)"""
+
+      # clear all
+      if key is None:
+         proj.eng.clear_all_opts()
+         return
+
+      # clear some/one
       if type(key) is not list: key = [ key ]
       proj.eng.clear_opts(key)
 
-   #------------------------------------------------------------------------
-   def clear_all_vars(self):
-      """Clear all project-level options/variables"""
-      proj.eng.clear_all_opts()
-
+      
    #------------------------------------------------------------------------   
    def clear_ivars(self):
       """Clear individual-level variables for all individuals"""
@@ -258,30 +287,43 @@ class proj:
    #------------------------------------------------------------------------      
    def import_db(self,f,s=None):
       """Import a destrat-style Luna output database"""
-      if s == None:
+      if s is None:
          return proj.eng.import_db(f)
       else:
          return proj.eng.import_db_subset(f,s)
 
    #------------------------------------------------------------------------      
-   def eval(self, cmdstr ):
+   def desc( self ):
+      """Returns table of descriptives for all sample-list individuals"""
+      silence_mode = self.is_silenced()
+      self.silence(True,False)
+      t = pd.DataFrame( proj.eng.desc() )
+      self.silence( silence_mode , False )
+      t.index = t.index + 1
+      if len( t ) == 0: return t
+      t.columns = ["ID","Gapped","Date","Start(hms)","Stop(hms)","Dur(hms)","Dur(s)","# sigs","# annots","Signals" ]
+      with pd.option_context('max_colwidth',None):
+         display(t)
+
+      
+   #------------------------------------------------------------------------      
+   def proc(self, cmdstr ):
       """Evaluates one or more Luna commands for all sample-list individuals"""
       r = proj.eng.eval(cmdstr)
       return tables( r )
 
    #------------------------------------------------------------------------ 
-   def silent_eval(self, cmdstr ):
+   def silent_proc(self, cmdstr ):
       """Silently evaluates one or more Luna commands for all sample-list individuals"""
       silence_mode = self.is_silenced()
       self.silence(True,False)
       r = proj.eng.eval(cmdstr)
       self.silence( silence_mode , False )
       return tables( r )
-   
-   
+      
    #------------------------------------------------------------------------   
    def commands( self ):
-      """Return a list of commands in the output set (following eval()"""
+      """Return a list of commands in the output set (following proc()"""
       t = pd.DataFrame( proj.eng.commands() )
       t.columns = ["Command"]
       return t
@@ -296,7 +338,7 @@ class proj:
       
       if self.empty_result_set(): return None
       t = pd.DataFrame( proj.eng.strata() )      
-      t.columns = ["Command","Stratum"]
+      t.columns = ["Command","Strata"]
       return t
 
    #------------------------------------------------------------------------
@@ -332,18 +374,18 @@ class proj:
              args = '' ):
       """Run the POPS stager"""
 
-      if path == None: path = resources.POPS_PATH
-      if lib == None: lib = resources.POPS_LIB
+      if path is None: path = resources.POPS_PATH
+      if lib is None: lib = resources.POPS_LIB
       
       import os
       if not os.path.isdir( path ):         
          return 'could not open POPS resource path ' + path 
 
-      if s == None and s1 == None:
+      if s is None and s1 is None:
          print( 'must set s or s1 and s2 to EEGs' )
          return
 
-      if ( s1 == None ) != ( s2 == None ):
+      if ( s1 is None ) != ( s2 is None ):
          print( 'must set s or s1 and s2 to EEGs' )
          return
          
@@ -356,26 +398,26 @@ class proj:
       self.var( 'LOFF' , lights_off )
       self.var( 'LON' , lights_on )
       
-      if s != None: self.var( 's' , s )
-      else: self.clear_var( 's' )
+      if s is not None: self.var( 's' , s )
+      else: self.clear_vars( 's' )
       
-      if m != None: self.var( 'm' , m )
-      else: self.clear_var( 'm' )
+      if m is not None: self.var( 'm' , m )
+      else: self.clear_vars( 'm' )
 
-      if s1 != None: self.var( 's1' , s1 )
-      else: self.clear_var( 's1' )
+      if s1 is not None: self.var( 's1' , s1 )
+      else: self.clear_vars( 's1' )
       
-      if s2 != None: self.var( 's2' , s2 )
-      else: self.clear_var( 's2' )
+      if s2 is not None: self.var( 's2' , s2 )
+      else: self.clear_vars( 's2' )
       
-      if m1 != None: self.var( 'm1' , m1 )
-      else: self.clear_var( 'm1' )
+      if m1 is not None: self.var( 'm1' , m1 )
+      else: self.clear_vars( 'm1' )
       
-      if m2 != None: self.var( 'm2' , m2 )
-      else: self.clear_var( 'm2' )
+      if m2 is not None: self.var( 'm2' , m2 )
+      else: self.clear_vars( 'm2' )
             
       # get either one- or two-channel mode Luna script from POPS folder
-      twoch = s1 != None and s2 != None;
+      twoch = s1 is not None and s2 is not None;
       if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
       else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
 
@@ -388,7 +430,7 @@ class proj:
             cmdstr = cmdstr.replace( 'POPS' , 'POPS ' + args + ' ')
       
       # run the command
-      self.eval( cmdstr )
+      self.proc( cmdstr )
 
       # return of results
       return self.table( 'POPS' )
@@ -400,15 +442,15 @@ class proj:
 
       This assumes that ${age} will be set via a vars file, i.e.
 
-         proj.opt( 'vars' , 'ages.txt' )      
+         proj.var( 'vars' , 'ages.txt' )      
 
       """
-      if path == None: path = resources.MODEL_PATH
+      if path is None: path = resources.MODEL_PATH
       if type( cen ) is list: cen = ','.join( cen )
       self.var( 'cen' , cen )
       self.var( 'mpath' , path )
       self.var( 'th' , str(th) )
-      self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
+      self.proc( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
       return self.table( 'PREDICT' )
 
 
@@ -467,24 +509,57 @@ class inst:
       _proj = proj(False)
       _proj.reset();
 
+
+   #------------------------------------------------------------------------
+   def clear_vars(self, keys = None ):
+      """Clear some or all individual-level variable(s)"""
+
+      # all
+      if keys is None:
+         self.edf.clear_ivar()
+         return
+
+      # one/some
+      if type( keys ) is not set: keys = set( keys )
+      self.edf.clear_selected_ivar( keys )
+      
+   #------------------------------------------------------------------------
+   def var( self , key = None , value = None ):
+      """Set or get individual-level variable(s)"""
+      return self.vars( key , value )
+   
    #------------------------------------------------------------------------      
-   def ivar( self , key , value = None ):
-      """Set or get an individual-level variable"""
-      if value != None: self.edf.ivar( key , str(value) )
-      else: return self.edf.get_ivar( key )
-         
-   #------------------------------------------------------------------------                                                                                                                                                            
-   def ivarmap(self,d):
-      """Sets individual-level variables"""
-      if isinstance(d, dict):
-         for k, v in d.items():
-            self.ivar(k,v)
+   def vars( self , key = None , value = None ):
+      """Set or get individual-level variable(s)"""
+
+      # return all i-vars
+      if key is None:
+         return self.edf.ivars()
+
+      # return one i-var   
+      if value is None and type( key ) is str:
+         return self.edf.get_ivar( key )
+      
+      # set from a dict of key-value pairs
+      if isinstance(key, dict):
+         for k, v in key.items():
+            self.vars(k,v)
+         return
+
+      # set a single pair
+      self.edf.ivar( key , str(value) )
+               
 
    #------------------------------------------------------------------------      
-   def ivars( self ):
-      """Return all individual-level variables"""
-      return self.edf.ivars()
-
+   def desc( self ):
+      """Returns of dataframe of current channels"""
+      t = pd.DataFrame( self.edf.desc() ).T
+      t.index =	t.index	+ 1
+      if len( t ) == 0: return t
+      t.columns = ["ID","Gapped","Date","Start(hms)","Stop(hms)","Dur(hms)","Dur(s)","# sigs","# annots","Signals" ]
+      with pd.option_context('display.max_colwidth',None):
+         display(t)
+   
    #------------------------------------------------------------------------      
    def channels( self ):
       """Returns of dataframe of current channels"""
@@ -557,7 +632,7 @@ class inst:
       """Return a dataframe of command/strata pairs from the output set"""
       if ( self.empty_result_set() ): return None
       t = pd.DataFrame( self.edf.strata() )
-      t.columns = ["Command","Stratum"]
+      t.columns = ["Command","Strata"]
       return t
 
    #------------------------------------------------------------------------
@@ -579,8 +654,9 @@ class inst:
    #------------------------------------------------------------------------
    def e2i( self, epochs ):
       """Helper function to convert epoch (1-based) to intervals"""
+      if type( epochs ) is not list: epochs = [ epochs ]
       return self.edf.e2i( epochs )
-   
+     
    # --------------------------------------------------------------------------------
    def s2i( self, secs ):
       """Helper function to convert seconds to intervals"""
@@ -590,27 +666,27 @@ class inst:
    def data( self, chs , annots = None , time = False ):
       """Returns all data for certain channels and annotations"""
       if type( chs ) is not list: chs = [ chs ]
-      if annots != None:
+      if annots is not None:
          if type( annots ) is not list: annots = [ annots ]
-      if annots == None: annots = [ ]
+      if annots is None: annots = [ ]
       return self.edf.data( chs , annots , time )
 
    # --------------------------------------------------------------------------------
    def slice( self, intervals, chs , annots = None , time = False ):
       """Return signal/annotation data aggregated over a set of intervals"""
       if type( chs ) is not list: chs = [ chs ]
-      if annots != None:
+      if annots is not None:
          if type( annots ) is not list: annots = [ annots ]
-      if annots == None: annots = [ ]
+      if annots is None: annots = [ ]
       return self.edf.slice( intervals, chs , annots , time )
 
    # --------------------------------------------------------------------------------   
    def slices( self, intervals, chs , annots = None , time = False ):
       """Return a series of signal/annotation data objects for each requested interval"""
       if type( chs ) is not list: chs = [ chs ]
-      if annots != None:
+      if annots is not None:
          if type( annots ) is not list: annots = [ annots ]
-      if annots == None: annots = [ ]
+      if annots is None: annots = [ ]
       return self.edf.slices( intervals, chs , annots , time )
    
    # --------------------------------------------------------------------------------
@@ -654,7 +730,7 @@ class inst:
       
    # --------------------------------------------------------------------------------
    def mask( self , f = None ):
-      if f == None: return
+      if f is None: return
       if type(f) is not list: f = [ f ]
       [ self.eval( 'MASK ' + _f ) for _f in f ]
       self.eval( 'RE' )   
@@ -681,7 +757,7 @@ class inst:
    # --------------------------------------------------------------------------------
    def psd( self, ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , xlines = None , ylines = None ):
       """Generates a PSD plot (from PSD or MTM)"""
-      if ch == None: return
+      if ch is None: return
       if type(ch) is not list: ch = [ ch ]
 
       if var == 'PSD':
@@ -699,7 +775,7 @@ class inst:
    # --------------------------------------------------------------------------------
    def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = None , w = 0.025 ):
       """Generates a PSD spectrogram (from PSD or MTM)"""
-      if ch == None: return
+      if ch is None: return
       if type(ch) is not list: ch = [ ch ]
 
       if var == 'PSD':
@@ -724,39 +800,39 @@ class inst:
              args = '' ):
       """Run the POPS stager"""
 
-      if path == None: path = resources.POPS_PATH
-      if lib == None: lib = resources.POPS_LIB
+      if path is None: path = resources.POPS_PATH
+      if lib is None: lib = resources.POPS_LIB
       
       import os
       if not os.path.isdir( path ):         
          return 'could not open POPS resource path ' + path 
 
-      if s == None and s1 == None:
+      if s is None and s1 is None:
          print( 'must set s or s1 and s2 to EEGs' )
          return
 
-      if ( s1 == None ) != ( s2 == None ):
+      if ( s1 is None ) != ( s2 is None ):
          print( 'must set s or s1 and s2 to EEGs' )
          return
          
       # set options
-      self.ivar( 'mpath' , path )
-      self.ivar( 'lib' , lib )
-      self.ivar( 'do_edger' , '1' if do_edger else '0' )
-      self.ivar( 'do_reref' , '1' if do_reref else '0' )
-      self.ivar( 'no_filter' , '1' if no_filter else '0' )
-      self.ivar( 'LOFF' , lights_off )
-      self.ivar( 'LON' , lights_on )
+      self.var( 'mpath' , path )
+      self.var( 'lib' , lib )
+      self.var( 'do_edger' , '1' if do_edger else '0' )
+      self.var( 'do_reref' , '1' if do_reref else '0' )
+      self.var( 'no_filter' , '1' if no_filter else '0' )
+      self.var( 'LOFF' , lights_off )
+      self.var( 'LON' , lights_on )
 
-      if s != None: self.ivar( 's' , s )
-      if m != None: self.ivar( 'm' , m )
-      if s1 != None: self.ivar( 's1' , s1 )
-      if s2 != None: self.ivar( 's2' , s2 )
-      if m1 != None: self.ivar( 'm1' , m1 )
-      if m2 != None: self.ivar( 'm2' , m2 )
+      if s is not None: self.var( 's' , s )
+      if m is not None: self.var( 'm' , m )
+      if s1 is not None: self.var( 's1' , s1 )
+      if s2 is not None: self.var( 's2' , s2 )
+      if m1 is not None: self.var( 'm1' , m1 )
+      if m2 is not None: self.var( 'm2' , m2 )
       
       # get either one- or two-channel mode Luna script from POPS folder
-      twoch = s1 != None and s2 != None;
+      twoch = s1 is not None and s2 is not None;
       if twoch: cmdstr = cmdfile( path + '/s2.ch2.txt' )
       else: cmdstr = cmdfile( path + '/s2.ch1.txt' )
 
@@ -779,17 +855,17 @@ class inst:
    # --------------------------------------------------------------------------------
    def predict_SUN2019( self, cen , age = None , th = '3' , path = None ):
       """Run SUN2019 prediction model for a single individual"""
-      if path == None: path = resources.MODEL_PATH
+      if path is None: path = resources.MODEL_PATH
       if type( cen ) is list : cen = ','.join( cen )
       
-      # set ivars
-      if age == None:
-         print( 'need to set age ivar' )
+      # set i-vars
+      if age is None:
+         print( 'need to set age indiv-var' )
          return
-      self.ivar( 'age' , str(age) )
-      self.ivar( 'cen' , cen )
-      self.ivar( 'mpath' , path )
-      self.ivar( 'th' , str(th) )
+      self.var( 'age' , str(age) )
+      self.var( 'cen' , cen )
+      self.var( 'mpath' , path )
+      self.var( 'th' , str(th) )
       self.eval( cmdfile( resources.MODEL_PATH + '/m1-adult-age-luna.txt' ) )
       return self.table( 'PREDICT' )
 
@@ -823,7 +899,7 @@ class inst:
    # --------------------------------------------------------------------------------
    def has_annots(self,anns):
       """Returns boolean for which annotations are present"""
-      if anns == None: return
+      if anns is None: return
       if type( anns ) is not list: anns = [ anns ]
       return self.edf.has_annots( anns )
 
@@ -835,14 +911,14 @@ class inst:
    # --------------------------------------------------------------------------------
    def has_channels(self,ch):
       """Return a boolean to indicate whether a given channel exists"""
-      if ch == None: return
+      if ch is None: return
       if type(ch) is not list: ch = [ ch ]
       return self.edf.has_channels( ch )
 
    # --------------------------------------------------------------------------------
    def has(self,ch):
       """Return a boolean to indicate whether a given channel exists"""
-      if ch == None: return
+      if ch is None: return
       if type(ch) is not list: ch = [ ch ]
       return self.edf.has_channels( ch )
 
@@ -880,6 +956,7 @@ def cmdfile( f ):
 
    return _luna.cmdfile( f )
 
+
 # --------------------------------------------------------------------------------
 def strata( ts ):
    """Utility function to format tables"""
@@ -891,7 +968,7 @@ def strata( ts ):
       return r
 
    t = pd.DataFrame( self.edf.strata() )
-   t.columns = ["Command","Stratum"]
+   t.columns = ["Command","Strata"]
    return t
 
 # --------------------------------------------------------------------------------
@@ -906,11 +983,11 @@ def table( ts, cmd , strata = 'BL' ):
 def tables( ts ):
    """Utility function to format tables"""
    r = { }
-   for cmd in ts:
+   for cmd in ts.keys():
       strata = ts[cmd].keys()
       for stratum in strata:
          r[ cmd + ": " + stratum ] = _table2df( ts[cmd][stratum] ) 
-      return r
+   return r
 
 # --------------------------------------------------------------------------------
 def _table2df( r ):
@@ -925,7 +1002,50 @@ def show( dfs ):
    for title , df in dfs.items():
       print( _color.BOLD + _color.DARKCYAN + title + _color.END )
       ICD.display(df)
- 
+
+
+# --------------------------------------------------------------------------------
+def subset( df , ids = None , qry = None , vars = None  ):
+   """Utility function to subset table rows/columns"""
+
+   # subset rows (ID)
+   if ids is not None:
+      if type(ids) is not list: ids = [ ids ]
+      df = df[ df[ 'ID' ].isin( ids ) ]
+
+   # subset rows (factors/levels)
+   if type(qry) is str:
+      df = df.query( qry )
+	
+   # subset cols (vars)
+   if vars is not None:
+      if type(vars) is not list: vars = [ vars ]
+      vars.insert( 0, 'ID' )
+      df = df[ vars ]
+
+   return df
+
+# --------------------------------------------------------------------------------
+def concat( dfs , tlab , vars = None , add_index = None , ignore_index = True ):
+   """Utility function to extract and concatenate tables"""
+
+   # assume dict[k]['cmd: faclvl']->table
+   # and we want to concatenate over 'k'
+   # assume 'k' will be tracked in the tables (e.g. via TAG)
+
+   if add_index is not None:
+      for k in dfs.keys():
+         dfs[k][tlab][ [add_index] ] = k
+
+   if vars is not None:
+      if type(vars) is not list: vars = [ vars ]
+      dfs = pd.concat( [ dfs[ k ][ tlab ][ vars ] for k in dfs.keys() ] , ignore_index = ignore_index )
+   if vars is None:
+      dfs = pd.concat( [ dfs[ k ][ tlab ] for k in dfs.keys() ] , ignore_index = ignore_index )
+
+   return dfs
+
+
 # --------------------------------------------------------------------------------
 #
 # Helpers
@@ -1036,7 +1156,7 @@ def stgn(ss):
 def hypno( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
     """Plot a hypnogram"""
     ssn = stgn( ss )
-    if e == None: e = np.arange(0, len(ssn), 1)
+    if e is None: e = np.arange(0, len(ssn), 1)
     e = e/120
     plt.figure(figsize=(xsize , ysize ))
     plt.plot( e , ssn , c = 'gray' , lw = 0.5 )
@@ -1079,7 +1199,7 @@ def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
 def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , 
         xlines = None , ylines = None, dB = False ):
     """Returns a PSD plot from PSD or MTM epoch table (CH_F)"""
-    if ch == None: return
+    if ch is None: return
     if type( ch ) is not list: ch = [ ch ]
     if type( xlines ) is not list and xlines != None: xlines = [ xlines ]
     if type( ylines ) is not list and ylines != None: ylines = [ ylines ]
@@ -1089,10 +1209,10 @@ def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = Non
     p = df[var].to_numpy(dtype=float)
     if dB is True: p = 10*np.log10(p)
     cx = df['CH'].to_numpy(dtype=str)
-    if minp == None: minp = min(p)
-    if maxp == None: maxp = max(p)
-    if minf == None: minf = min(f)
-    if maxf == None: maxf = max(f)
+    if minp is None: minp = min(p)
+    if maxp is None: maxp = max(p)
+    if minf is None: minf = min(f)
+    if maxf is None: maxf = max(f)
     incl = np.zeros(len(df), dtype=bool)
     incl[ (f >= minf) & (f <= maxf) ] = True
     f = f[ incl ]
@@ -1104,23 +1224,23 @@ def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = Non
     plt.legend()
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Power (dB)')
-    if xlines != None: [plt.axvline(_x, linewidth=1, color='gray') for _x in xlines ]
-    if ylines != None: [plt.axhline(_y, linewidth=1, color='gray') for _y in ylines ]
+    if xlines is not None: [plt.axvline(_x, linewidth=1, color='gray') for _x in xlines ]
+    if ylines is not None: [plt.axhline(_y, linewidth=1, color='gray') for _y in ylines ]
     plt.show()
 
 
 # --------------------------------------------------------------------------------
 def spec(df , ch = None , var = 'PSD' , mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
     """Returns a spectrogram from a PSD or MTM epoch table (CH_E_F)"""
-    if ch != None: df = df.loc[ df['CH'] == ch ]
+    if ch is not None: df = df.loc[ df['CH'] == ch ]
     if len(df) == 0: return
     x = df['E'].to_numpy(dtype=int)
     y = df['F'].to_numpy(dtype=float)
     z = df[ var ].to_numpy(dtype=float)
-    if mine == None: mine = min(x)
-    if maxe == None: maxe = max(x)
-    if minf == None: minf = min(y)
-    if maxf == None: maxf = max(y)
+    if mine is None: mine = min(x)
+    if maxe is None: maxe = max(x)
+    if minf is None: minf = min(y)
+    if maxf is None: maxf = max(y)
     incl = np.zeros(len(df), dtype=bool)
     incl[ (x >= mine) & (x <= maxe) & (y >= minf) & (y <= maxf) ] = True
     x = x[ incl ]
@@ -1160,14 +1280,14 @@ def topo_heat(chs, z,  ths = None , th=0.05 ,
     """Generate a channel-wise topoplot"""
 
     z = np.array(z)
-    if ths != None: ths = np.array(ths)
-    if topo == None: topo = default_xy()
+    if ths is not None: ths = np.array(ths)
+    if topo is None: topo = default_xy()
 
     xlim = [-0.6, 0.6]
     ylim = [-0.6, 0.6]
     rng = [np.min(z), np.max(z)]
 
-    if lmts == None : lmts = rng
+    if lmts is None : lmts = rng
     else: assert lmts[0] <= rng[0] <= lmts[1] and lmts[0] <= rng[1] <= lmts[1], "channel values are out of specified limits"
    
     assert len(set(topo['CH']).intersection(chs)) > 0, "no matching channels"
@@ -1180,7 +1300,7 @@ def topo_heat(chs, z,  ths = None , th=0.05 ,
 
     for ix, ch in topo.iterrows():
         topo.loc[ix,'vals'] = z[chs == ch["CH"]]
-        if ths == None:
+        if ths is None:
            topo.loc[ix,'th_vals'] = 999;
         else:              
            topo.loc[ix,'th_vals'] = ths[chs == ch["CH"]] 
