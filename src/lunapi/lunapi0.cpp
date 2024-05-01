@@ -27,25 +27,26 @@
 #include "luna.h"
 
 namespace py = pybind11;
+
 using namespace pybind11::literals;
 
 PYBIND11_MODULE(lunapi0, m) {
-
+  
   m.doc() = "LunaAPI: Python bindings for the Luna C/C++ library";
   
   m.def( "inaugurate",
 	 &lunapi_t::inaugurate,
 	 py::return_value_policy::reference ,
 	 "Start/return a reference to the Luna engine" );
-
+  
   m.def( "retire",
 	 &lunapi_t::retire,	 
 	 "Retire an extant Luna engine" );
-
+  
   m.def( "cmdfile" ,
 	 &lunapi_t::cmdfile ,
 	 "Load a Luna script from a file" );    
-
+  
   m.def( "version" ,
 	 &lunapi_t::version ,
 	 "Version of Luna" );
@@ -65,21 +66,29 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_sample_list" ,
           &lunapi_t::sample_list,
           "Return the loaded sample list" )
-
+    
     .def( "insert_inst" , &lunapi_t::insert_inst )
     .def( "nobs" , &lunapi_t::nobs )
     .def( "clear" , &lunapi_t::clear )
-
+    
     .def( "silence", &lunapi_t::silence )
     .def( "is_silenced" , &lunapi_t::is_silenced )
 
     .def( "flush" , &lunapi_t::flush )
-
+    
     .def( "reset" , &lunapi_t::reset )
     
-    .def("opt",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::var),
-		"Set an option value" )
+    .def( "include" ,
+	  &lunapi_t::includefile ,
+	  "Include a @parameter-file" )
 
+    .def( "aliases" ,
+	  &lunapi_t::aliases ,
+	  "Return table of signal & annotation aliases/mappings" )
+    
+    .def("opt",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::var),
+	 "Set an option value" )
+    
     .def("get_opt",py::overload_cast<const std::string &>(&lunapi_t::var,py::const_ ),
 	 "Show an option value" )
     .def("get_opts",py::overload_cast<const std::vector<std::string> &>(&lunapi_t::vars,py::const_),
@@ -87,91 +96,93 @@ PYBIND11_MODULE(lunapi0, m) {
     .def("get_all_opts",py::overload_cast<>(&lunapi_t::vars,py::const_),
 	 "Show all option values" )
     
-    .def("clear_opt",&lunapi_t::dropvar,
-	 "Clear an option" )
     .def("clear_opts",&lunapi_t::dropvars,
 	 "Clear options" )
     .def("clear_all_opts",&lunapi_t::dropallvars,
 	 "Clear all options" )
-
+    
     .def("clear_ivars",&lunapi_t::clear_ivars,
 	 "Clear all individual-variables")
-
+    
     .def( "inst" ,
 	  py::overload_cast<int>
 	  (&lunapi_t::inst,py::const_),
 	  "Return a lunapi-instance object from a sample list" )
-
+    
     .def( "inst" ,
 	  py::overload_cast<const std::string&>
 	  (&lunapi_t::inst,py::const_),
 	  "Generate an empty lunapi-instance" )
-
+    
     .def( "inst" ,
 	  py::overload_cast<const std::string&,const std::string &>
 	  (&lunapi_t::inst,py::const_),
 	  "Generate an lunapi-instance with attached EDF" )
-
+    
     .def( "inst" ,
 	  py::overload_cast<const std::string&,const std::string &,const std::string&>
 	  (&lunapi_t::inst,py::const_),
 	  "Generate an lunapi-instance with attached EDF & annotation" )
-
+    
     .def( "inst" ,
 	  py::overload_cast<const std::string&,const std::string &,const std::set<std::string>&>
 	  (&lunapi_t::inst,py::const_),
 	  "Generate an lunapi-instance with attached EDF & annotations" )
-
+    
     .def( "get_n" , &lunapi_t::get_n)
     .def( "get_id" , &lunapi_t::get_id)
     .def( "get_edf" , &lunapi_t::get_edf)
     .def( "get_annot" , &lunapi_t::get_annot)
-
+    
     .def( "import_db" ,
 	  py::overload_cast<const std::string &>(&lunapi_t::import_db) )
     .def( "import_db_subset" ,
 	  py::overload_cast<const std::string &,const std::set<std::string> &>(&lunapi_t::import_db) )
-
+    
+    .def("desc",&lunapi_t::desc,
+	 "Table of basic descripives for all individuals" )
     .def("eval",&lunapi_t::eval,
 	 "Evaluate a Luna command sequence given an attached EDF" ) 
-  
+    
     .def("commands",&lunapi_t::commands,
-       "List commands resulting from a prior eval()" )
-
+	 "List commands resulting from a prior eval()" )
+    
     .def("strata",&lunapi_t::strata,
 	 "List command/strata tuples resulting from a prior eval()" )
-
+    
     .def("vars",&lunapi_t::variables,
 	 "List variables (columns) from a table (defined by a command/strat pair) from a prior eval()")
-
+    
     .def("table",py::overload_cast<const std::string &,const std::string &>(&lunapi_t::results,py::const_) ,
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" )
-
+    
     .def("tables",py::overload_cast<>(&lunapi_t::results,py::const_) ,
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" );
-
+  
   //
   // lunapi_inst_t : individual instance (EDF/annotation pair)
   //
-
+  
   py::class_<lunapi_inst_t, std::shared_ptr<lunapi_inst_t> >(m, "inst")
-
+    
     // .def(py::init<const std::string &>(),
     // 	 py::arg( "id" ) = "id1" )
-
+    
     .def( "attach_edf", &lunapi_inst_t::attach_edf,
 	  "Attach an EDF" ,
 	  "edffile"_a )
     .def( "attach_annot",&lunapi_inst_t::attach_annot,
 	  "Attach an annotation file to the current EDF" ,
 	  "annotfile"_a )
-
+    
     
     .def( "refresh", &lunapi_inst_t::refresh,
 	  "Reattach the current EDF")
     .def( "drop", &lunapi_inst_t::drop,
 	  "Drop the current EDF" )
     
+    .def( "desc" , &lunapi_inst_t::desc,
+	  "Return basic descriptive information" )
     .def( "channels", &lunapi_inst_t::channels,
 	  "Return a list of channel labels" )
     .def( "chs", &lunapi_inst_t::channels,
@@ -181,7 +192,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "has", &lunapi_inst_t::has_channels,
 	  "Return boolean for whether channels exist (with aliasing)" )
 
-
+    
     
     .def( "annots", &lunapi_inst_t::annots,
 	  "Return a list of all annotations class labels" )
@@ -189,16 +200,16 @@ PYBIND11_MODULE(lunapi0, m) {
 	  "Return a list of intervals for selected annotations" )
     .def( "fetch_full_annots", &lunapi_inst_t::fetch_full_annots,
 	  "Return a list of intervals and meta-data for selected annotations" )
-
+    
     .def( "has_annots" , &lunapi_inst_t::has_annots,
 	  "Return boolean for whether annotations exist (with aliasing)" )
-
+    
     .def( "has_staging" , &lunapi_inst_t::has_staging,
 	  "Return boolean for whether valid staging annotations exist" )
     
     .def( "stat" , &lunapi_inst_t::status,
 	  "Return a dict of key details on the current EDF" )
-
+    
     .def( "e2i" , &lunapi_inst_t::epochs2intervals ,
 	  "Convert epoch numbers to interval tuples" ,
 	  "e"_a )
@@ -224,7 +235,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "insert_annot" , &lunapi_inst_t::insert_annotation,
 	  "Insert an annotation" ,
 	  "label"_a , "intervals"_a , "durcol2"_a = false ) 
-
+    
     .def("ivar",py::overload_cast<const std::string &,const std::string &>(&lunapi_inst_t::ivar),
 	 "Set an individual-variable")
     .def("get_ivar",py::overload_cast<const std::string &>(&lunapi_inst_t::ivar,py::const_),
@@ -233,13 +244,16 @@ PYBIND11_MODULE(lunapi0, m) {
 	 "Return all individual-variables")
     .def("clear_ivar",&lunapi_inst_t::clear_ivar,
 	 "Clear individual-variables")
-
+    .def("clear_selected_ivar",&lunapi_inst_t::clear_selected_ivar,
+	 "Clear selected individual-variables")
+    
+    
     .def("eval",&lunapi_inst_t::eval,
 	 "Evaluate Luna commands" )
-
+    
     .def("proc",&lunapi_inst_t::eval_return_data,
 	 "Similar to eval(), but returns all data tables" )
-
+    
     .def("commands",&lunapi_inst_t::commands,
 	 "List commands resulting from a prior eval()" )
     .def("strata",&lunapi_inst_t::strata,
@@ -250,7 +264,7 @@ PYBIND11_MODULE(lunapi0, m) {
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" )
     .def("tables",py::overload_cast<>(&lunapi_inst_t::results,py::const_) ,
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" )
-        
+    
     .def("__repr__",
 	 [](const lunapi_inst_t & a)
 	 {
@@ -263,10 +277,7 @@ PYBIND11_MODULE(lunapi0, m) {
 	   return s;
 	 }
 	 );
-  
-
-
-  
+ 
   
 }
 
