@@ -23,7 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # This step checks out your repository's code
-      # This step ensures that your repository's code is available to the workflow
+      # By default, this runner doesn't have a copy of your repository's code
+      # The checkout action copies your repository's code into the runner's workspace
 
       - name: Set up Python
         uses: actions/setup-python@v4
