@@ -22,9 +22,13 @@ jobs:
             job_name: "MacOs 13 x86_64 Build"
     steps:
       - uses: actions/checkout@v4
+      # This step checks out your repository's code
+      # This step ensures that your repository's code is available to the workflow
 
       - name: Set up Python
         uses: actions/setup-python@v4
+        # set up a specific Python version (like Python 3.8)
+        # This step installs Python 3.8 on the runner
         with:
           python-version: '3.8'
       - name: Install dependencies
@@ -43,6 +47,7 @@ jobs:
         with:
            output-dir: wheelhouse
 
+      # Upload and download data
       - uses: actions/upload-artifact@v3
         with:
           name: wheels
