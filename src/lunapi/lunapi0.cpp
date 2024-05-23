@@ -264,7 +264,9 @@ PYBIND11_MODULE(lunapi0, m) {
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" )
     .def("tables",py::overload_cast<>(&lunapi_inst_t::results,py::const_) ,
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" )
-    
+
+    .def( "get_id", [](const lunapi_inst_t & a) { return a.get_id(); } )
+
     .def("__repr__",
 	 [](const lunapi_inst_t & a)
 	 {
@@ -277,7 +279,63 @@ PYBIND11_MODULE(lunapi0, m) {
 	   return s;
 	 }
 	 );
- 
+
+
+
+  //
+  // segsrv_t : segment-server instance (linked to a single lunapi_inst_t)
+  //
   
+  py::class_<segsrv_t>(m, "segsrv")
+    .def(py::init<lunapi_inst_ptr>())
+    .def( "populate", &segsrv_t::populate,
+	  "Initiate segment-server channels, annots" ,
+	  "chs"_a , "anns"_a )
+    .def( "set_window", &segsrv_t::set_window,	  
+	  "Define current window" ,
+	  "start"_a , "stop"_a )
+    .def( "get_signal", &segsrv_t::get_signal )
+    .def( "get_timetrack", &segsrv_t::get_timetrack )
+    .def( "get_time_scale", &segsrv_t::get_time_scale )
+    .def( "set_scaling", &segsrv_t::set_scaling )
+    .def( "fix_physical_scale", &segsrv_t::fix_physical_scale )
+    .def( "free_physical_scale", &segsrv_t::free_physical_scale )
+    .def( "get_scaled_signal", &segsrv_t::get_scaled_signal )
+    .def( "get_gaps" , &segsrv_t::get_gaps )
+
+    .def( "set_epoch_size", &segsrv_t::set_epoch_size )
+    .def( "calc_bands", &segsrv_t::calc_bands ) // say which channels to do this for
+    .def( "calc_hjorths" , &segsrv_t::calc_hjorths )
+    .def( "nepochs" , &segsrv_t::nepochs )
+
+    .def( "get_epoch_size" , &segsrv_t::get_epoch_size )
+    //    .def( "get_epoch_timetrack" , &segsrv_t::get_epoch_timetrack )
+    .def( "get_bands", &segsrv_t::get_bands ) // actually return the final epoch x band matrix for channel ch
+    .def( "get_hjorths" , &segsrv_t::get_hjorths )
+
+    //    .def( "get_ungapped_total_sec" , &segsrv_t::get_ungapped_total_sec )
+    .def( "get_total_sec" , &segsrv_t::get_total_sec )
+    .def( "get_total_sec_original" , &segsrv_t::get_total_sec_original )
+    .def( "is_window_valid" , &segsrv_t::is_window_valid )
+    .def( "get_window_left"  , &segsrv_t::get_window_left )
+    .def( "get_window_right" , &segsrv_t::get_window_right )
+    .def( "get_window_left_hms" , &segsrv_t::get_window_left_hms )
+    .def( "get_window_right_hms" , &segsrv_t::get_window_right_hms )
+    .def( "get_clock_ticks" , &segsrv_t::get_clock_ticks )
+    .def( "get_window_phys_range" , &segsrv_t::get_window_phys_range )
+    .def( "get_ylabel" , &segsrv_t::get_ylabel )
+    .def( "throttle" , &segsrv_t::throttle )
+    .def( "input_throttle" , &segsrv_t::input_throttle )
+    .def( "summary_threshold_mins" , &segsrv_t::summary_threshold_mins )
+    .def( "serve_raw_signals", &segsrv_t::serve_raw_signals )
+    .def( "get_summary_stats", &segsrv_t::get_summary_stats )
+    .def( "get_summary_timetrack", &segsrv_t::get_summary_timetrack )
+
+    .def( "compile_evts" , &segsrv_t::compile_evts )
+    .def( "get_evnts_xaxes" , &segsrv_t::get_evnts_xaxes )
+    .def( "get_evnts_yaxes" , &segsrv_t::get_evnts_yaxes )
+    .def( "fetch_all_annots", &segsrv_t::fetch_all_evts )
+    .def( "fetch_annots" , &segsrv_t::fetch_evts ); 
+
 }
 
