@@ -1713,7 +1713,7 @@ def scope( p,
     # defaults
     if sigs is None: sigs = all_sigs
     if bsigs is None: bsigs = p.var( 'eeg' ).split(",")
-    if hsigs is None: hsigs = sigs
+    if hsigs is None: hsigs = p.var( 'eeg' ).split(",")
     if anns is None: anns = all_annots
     
     # ensure we do not have weird channels
@@ -1765,7 +1765,7 @@ def scope( p,
     chbox  = widgets.SelectMultiple( options=sigs, value=sigs, rows=7, description='', disabled=False , layout = wlay1 )
     if len(bsigs) != 0: pow_sel = widgets.Dropdown( options = bsigs, value=bsigs[0],description='',disabled=False,layout = wlay1 )
     else: pow_sel = widgets.Dropdown( options = bsigs, value=None,description="Band power:",disabled=False,layout = wlay1 )
-    band_hjorth_sel = widgets.Checkbox( value = False , description = 'Hjorth' , disabled=False, indent=False )
+    band_hjorth_sel = widgets.Checkbox( value = True , description = 'Hjorth' , disabled=False, indent=False )
     
     # annotations (display)
     anlab = widgets.Label( value = 'Annotations:' )
