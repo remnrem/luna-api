@@ -1762,11 +1762,11 @@ def scope( p,
     
     # channel selection box
     chlab = widgets.Label( value = 'Channels:' )
-    chbox  = widgets.SelectMultiple( options=sigs, value=sigs, rows=8, description='', disabled=False , layout = wlay1 )
-    if len(bsigs) != 0: pow_sel = widgets.Dropdown( options = bsigs, value=bsigs[0],description="Band power:",disabled=False,layout = wlay1 )
+    chbox  = widgets.SelectMultiple( options=sigs, value=sigs, rows=7, description='', disabled=False , layout = wlay1 )
+    if len(bsigs) != 0: pow_sel = widgets.Dropdown( options = bsigs, value=bsigs[0],description='',disabled=False,layout = wlay1 )
     else: pow_sel = widgets.Dropdown( options = bsigs, value=None,description="Band power:",disabled=False,layout = wlay1 )
-#    hjorth_sel = widgets.Dropdown( options = hsigs, value=None,description="Band power:",disabled=False)
-
+    band_hjorth_sel = widgets.Checkbox( value = False , description = 'Hjorth' , disabled=False, indent=False )
+    
     # annotations (display)
     anlab = widgets.Label( value = 'Annotations:' )
     anbox = widgets.SelectMultiple( options=anns , value=[], rows=3, description='', disabled=False , layout = wlay1 )
@@ -1783,7 +1783,7 @@ def scope( p,
 
     # misc buttons
     reset_button = widgets.Button( description='Reset', disabled=False,button_style='',tooltip='',layout=widgets.Layout(width='98%') )
-    keep_xscale = widgets.Checkbox( value = False , description = 'Fixed width' , disabled=False, indent=False )
+    keep_xscale = widgets.Checkbox( value = False , description = 'Fixed int.' , disabled=False, indent=False )
     show_ranges = widgets.Checkbox( value = True , description = 'Units' , disabled=False, indent=False )
 
 
@@ -1818,8 +1818,8 @@ def scope( p,
     # --------------------- signal plotter (g)
 
     # traces (xNS), labels (xNS), gaps(x1), annots(xNA), clock-ticks(x1)
-    fig = [go.Scatter(x = ss.get_timetrack( sig ) ,
-                      y = ss.get_scaled_signal( sig , sig2n[ sig ] ) , 
+    fig = [go.Scatter(x = None, 
+                      y = None, 
                       mode = 'lines',
                       line=dict(color=palette[sig], width=1),
                       hoverinfo='none',
@@ -1962,8 +1962,8 @@ def scope( p,
 
     # --------------------- band power/spectrogram (bg)
     
-#    bfig = go.Heatmap( z = None , type = 'heatmap',  colorscale = 'RdBu_r', showscale = False , hoverinfo = 'none' )
-    bfig = go.Heatmap( z = None , type = 'heatmap',  colorscale = 'viridis', showscale = False , hoverinfo = 'none' )
+    #bfig = go.Heatmap( z = None , type = 'heatmap',  colorscale = 'RdBu_r', showscale = False , hoverinfo = 'none' )
+    bfig = go.Heatmap( z = None , type = 'heatmap',  colorscale = 'turbo', showscale = False , hoverinfo = 'none' )
     
     blayout = go.Layout( margin=dict(l=8, r=8, t=0, b=0),
                          modebar={'orientation': 'h','bgcolor': '#E9E9E9','color': 'white','activecolor': 'white' },
@@ -2006,7 +2006,8 @@ def scope( p,
 
     # left panel: construct all
     left_panel = widgets.VBox(children=[ ctr_container,
-                                         chlab, chbox, pow_sel  ,
+                                         chlab, chbox,
+                                         widgets.HBox( children = [ band_hjorth_sel, pow_sel ] ),
                                          anlab, anbox, a1lab, ansel, a1box,
                                          lower_buttons ] ,
                               layout = widgets.Layout( width='95%' , margin='0 0 0 5px' , overflow_x = 'hidden' ) )
@@ -2122,10 +2123,19 @@ def scope( p,
         redraw()
     
     def update_bandpower(change):
-        S = np.transpose( ss.get_bands( pow_sel.value ) )
-        S = np.asarray(S,dtype=object)
-        S[np.isnan(S.astype(np.float_))] = None
-        bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
+        if type( pow_sel.value ) is None: return 
+        if len( pow_sel.value ) == 0: return
+        if band_hjorth_sel.value is True:
+           S = np.transpose( ss.get_hjorths( pow_sel.value ) )
+           print(S)
+           S = np.asarray(S,dtype=object)
+           S[np.isnan(S.astype(np.float_))] = None
+           bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
+        else:
+           S = np.transpose( ss.get_bands( pow_sel.value ) )
+           S = np.asarray(S,dtype=object)
+           S[np.isnan(S.astype(np.float_))] = None
+           bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
 
     def pop_a1(change):
         a1box.options = ss.get_all_annots( ansel.value )
@@ -2157,7 +2167,7 @@ def scope( p,
         if p2 >= ss.num_seconds_clocktime():
             p2 = ss.num_seconds_clocktime() - 1 
         ss.window( p1 , p2 )
-        epoch.value = str(int(smid.value/30))
+        epoch.value = str(1+int(smid.value/30))
         redraw()
 
     def fn_reset(b):
@@ -2166,11 +2176,11 @@ def scope( p,
         yscale.value = str( 0 )
                 
     def fn_dec_epoch(b):
-        if smid.value > smid.min:
+        if ( smid.value - scope_epoch_sec ) >= smid.min :
             smid.value = smid.value - scope_epoch_sec
 
     def fn_inc_epoch(b):
-        if smid.value < smid.max:
+        if ( smid.value + scope_epoch_sec ) <= smid.max :
             smid.value = smid.value + scope_epoch_sec
         
     def fn_dec_swid(b):
@@ -2205,6 +2215,11 @@ def scope( p,
         if yscale_var < 2: yscale_var = yscale_var + 0.2
         yscale.value = str( round( yscale_var , 1 ) )
 
+    def fn_hjorth_band(b):
+        if band_hjorth_sel.value is True:
+           pow_sel.options = hsigs
+        else:
+           pow_sel.options = bsigs
         
     # --------------------- hook up widgets
 
@@ -2214,6 +2229,8 @@ def scope( p,
 
     show_ranges.observe(set_window_from_sliders)
 
+    band_hjorth_sel.observe( fn_hjorth_band )
+    
     swid_dec_button.on_click(fn_dec_swid)
     swid_inc_button.on_click(fn_inc_swid)
 
@@ -2246,8 +2263,7 @@ def scope( p,
     
     # ---------------------  display
     update_bandpower(None)
-    rescale({})
-    set_window_from_sliders(None)
+    ss.set_scaling( len(chbox.value) , len( anbox.value) , 2**float(yscale.value) , float(yspace.value) , header_height, footer_height , annot_height )
 
     return container_app
 

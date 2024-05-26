@@ -44,7 +44,10 @@ RUN mkdir /data \
  && wget https://zzz.bwh.harvard.edu/dist/luna/tutorial.zip \
  && unzip tutorial.zip \
  && rm tutorial.zip
- 
+
+# force rebuild of lunapi below
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 RUN cd /build \
  && git clone https://github.com/remnrem/luna-base.git \
  && cd luna-base \
@@ -55,11 +58,8 @@ RUN cd /build \
  && ln -s /build/luna-base/fixrows /usr/local/bin/fixrows \
  && sudo cp libluna.a /usr/local/lib/
 
-# force rebuild of lunapi below
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
 # make lunapi 
-RUN pip install pandas matplotlib \
+RUN pip install pandas matplotlib plotly ipywidgets \
  && cd /build \
  && git clone https://github.com/remnrem/luna-api.git \
  && cd luna-api \
