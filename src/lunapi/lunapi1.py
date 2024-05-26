@@ -1817,13 +1817,20 @@ def scope( p,
 
     # --------------------- signal plotter (g)
 
-    # traces (xNS), labels (xNS), gaps(x1), annots(xNA), clock-ticks(x1)
+    # traces (xNS), gaps(x1), labels (xNS), annots(xNA), clock-ticks(x1)
     fig = [go.Scatter(x = None, 
                       y = None, 
                       mode = 'lines',
                       line=dict(color=palette[sig], width=1),
                       hoverinfo='none',
                       name = sig ) for sig in sigs
+    ] + [ go.Scatter( x = None , y = None ,
+                      mode = 'lines' ,
+                      fill='toself' ,
+                      fillcolor='#223344',
+                      line=dict(color='#888888', width=1),
+                      hoverinfo='none',
+                      name='Gap' ) 
     ] + [ go.Scatter( x = None , y = None ,
                       mode='text' ,
                       textposition='middle right',
@@ -1832,13 +1839,6 @@ def scope( p,
                           color='white'),
                       hoverinfo='none' ,
                       showlegend=False ) for sig in sigs 
-    ] + [ go.Scatter( x = None , y = None ,
-                      mode = 'lines' ,
-                      fill='toself' ,
-                      fillcolor='#223344',
-                      line=dict(color='#888888', width=1),
-                      hoverinfo='none',
-                      name='Gap' ) 
     ] + [ go.Scatter( x = None , 
                       y = None , 
                       mode = 'lines',
@@ -2065,24 +2065,8 @@ def scope( p,
                 else:
                     g.data[i].visible = False
 
-            # ranges? (+ns)
-            if show_ranges.value is True:
-                idx=0
-                xl = x1 + (x2-x1 ) * 0.01 
-                for i in list(range(0,ns)):
-                    if selected[i] is True:
-                        ylim = ss.get_window_phys_range( sigs[i] )
-                        ylab = sigs[i] + ' ' + str(round(ylim[0],3)) + ':' + str(round(ylim[1],3)) + ' (' + units[sigs[i]] +')'
-                        g.data[i+ns].x = [ xl ]
-                        g.data[i+ns].y = [ ss.get_ylabel( idx ) * (1 - header_height ) ]
-                        g.data[i+ns].text = [ ylab ]
-                        g.data[i+ns].visible = True
-                        idx += 1
-                    else:
-                        g.data[i+ns].visible = False
- 
             # gaps (last trace)
-            gidx = 2 * ns
+            gidx = ns
             gaps = list( ss.get_gaps() )
             if len(gaps) == 0:
                 g.data[ gidx ].visible = False
@@ -2093,6 +2077,23 @@ def scope( p,
                 g.data[ gidx ].x = [x for sub in xgaps for x in sub]
                 g.data[ gidx ].y = [y for sub in ygaps for y in sub]
                 g.data[ gidx ].visible = True
+
+            # ranges? (+ns)
+            if show_ranges.value is True:
+                idx=0
+                xl = x1 + (x2-x1 ) * 0.01 
+                for i in list(range(0,ns)):
+                    if selected[i] is True:
+                        ylim = ss.get_window_phys_range( sigs[i] )
+                        ylab = sigs[i] + ' ' + str(round(ylim[0],3)) + ':' + str(round(ylim[1],3)) + ' (' + units[sigs[i]] +')'
+                        g.data[i+ns+1].x = [ xl ]
+                        g.data[i+ns+1].y = [ ss.get_ylabel( idx ) * (1 - header_height ) ]
+                        g.data[i+ns+1].text = [ ylab ]
+                        g.data[i+ns+1].visible = True
+                        idx += 1
+                    else:
+                        g.data[i+ns+1].visible = False
+ 
 
             # annots (+2ns + gap)
             ns2 = 2 * ns + 1
@@ -2127,7 +2128,6 @@ def scope( p,
         if len( pow_sel.value ) == 0: return
         if band_hjorth_sel.value is True:
            S = np.transpose( ss.get_hjorths( pow_sel.value ) )
-           print(S)
            S = np.asarray(S,dtype=object)
            S[np.isnan(S.astype(np.float_))] = None
            bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
