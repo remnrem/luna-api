@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "lunapi"
-version = "0.0.8"
+version = "0.0.9"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9"
@@ -13,6 +13,9 @@ dependencies = [
   'pandas',
   'numpy',
   'scipy',
+  'plotly',
+  'ipywidgets',
+  'itertools',
   'IPython'
 ]
 
