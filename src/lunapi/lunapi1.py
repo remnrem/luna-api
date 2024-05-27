@@ -2124,7 +2124,7 @@ def scope( p,
         redraw()
     
     def update_bandpower(change):
-        if type( pow_sel.value ) is None: return 
+        if pow_sel.value is None: return 
         if len( pow_sel.value ) == 0: return
         if band_hjorth_sel.value is True:
            S = np.transpose( ss.get_hjorths( pow_sel.value ) )
