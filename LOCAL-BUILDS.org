@@ -54,11 +54,35 @@ To upgrade when a new lunapi available:
 
   pip install --upgrade --user lunapi
 
+
+# needed :  
+  nbformat
+
+  # to get working on jupyter hub 
+pip install jupyterlab
+pip install ipywidgets --upgrade
+conda install -c conda-forge nodejs
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+npm install -g npm
+  
+
+
+
+import plotly.graph_objects as go
+import plotly.express as px
+import pandas as pd
+from ipywidgets import widgets
+import plotly.io as pio
+pio.renderers
+f1 = go.FigureWidget( go.Scatter(x=[1,2,3],y=[4,5,4]) )
+f2 = go.FigureWidget( go.Scatter(x=[1,2,1],y=[4,5,10]) )
+c1 = widgets.HBox( children = [ f1 ,f2 ] ) 
+display(c1)
+
+
 * Docker lunapi
 
-...
-  
+docker build -t lunapi .
 
+docker run -p=8888:8888 -v=${PWD}:/lunapi/ lunapi
 
-
-  
