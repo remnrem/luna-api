@@ -55,7 +55,7 @@ jobs:
           path: ./wheelhouse/*.whl
 
       - name: Publish to PyPI
-        run: twine upload wheelhouse/*.whl --verbose
+        run: twine upload wheelhouse/*.whl --verbose --skip-existing
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
