@@ -66,7 +66,9 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_sample_list" ,
           &lunapi_t::sample_list,
           "Return the loaded sample list" )
-    
+    .def( "validate_sample_list" , 
+	  &lunapi_t::validate_sample_list ,
+	  "Validate an attached sample list" )
     .def( "insert_inst" , &lunapi_t::insert_inst )
     .def( "nobs" , &lunapi_t::nobs )
     .def( "clear" , &lunapi_t::clear )
