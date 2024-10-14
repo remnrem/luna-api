@@ -83,7 +83,11 @@ class proj:
           a list of folder names and optional arguments to be passed to build
 
       """
-          
+
+      # first clear any existing sample list
+      proj.eng.clear()
+
+      # then try to build a new one
       if type( args ) is not list: args = [ args ]
       return proj.eng.build_sample_list( args )
 
@@ -143,6 +147,28 @@ class proj:
       """
 
       return proj.eng.nobs()
+
+   #------------------------------------------------------------------------
+      
+   def validate( self ):
+      """Validates an internal sample-list 
+      
+      This provides the same functionality
+      as the `--validate` option of Luna, which is described here:
+
+      https://zzz.bwh.harvard.edu/luna/ref/helpers/#-validate
+
+      Parameters
+      ----------
+      none
+
+      """
+
+      tbl = proj.eng.validate_sample_list()
+      tbl = pd.DataFrame( tbl )
+      tbl.columns = [ 'ID' , 'Filename', 'Valid' ]
+      tbl.index += 1
+      return tbl
 
 
    #------------------------------------------------------------------------
