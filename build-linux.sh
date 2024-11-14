@@ -15,6 +15,10 @@ cd cmake-3.8.2
 ./bootstrap
 make -j$(nproc)
 make install
+# Verify that CMake 3.8 is installed
+cmake --version
+# Copy CMake to GitHub workspace
+cp -r ./bin/* "$GITHUB_WORKSPACE/"
 
 # FFTW
 curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
