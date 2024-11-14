@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v0.1.1, 30-May-2024
+# v0.1.2, 14-Nov-2024
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +33,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v0.1.1"
+lp_version = "v0.1.2"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -198,6 +198,24 @@ class proj:
       # return based on n (from sample-list) or string/empty (new instance)
       return inst(proj.eng.inst( n ))
       
+
+   #------------------------------------------------------------------------
+   
+   def empty_inst( self, id, nr, rs, startdate = '01.01.00', starttime = '00.00.00' ):
+      """Generates a new instance with empty fixed-size EDF"""
+
+      # check inputs
+      nr = int( nr )
+      rs = int( rs )
+      if nr < 0:
+         print( "expecting nr (number of records) to be a positive integer" )
+         return      
+      if rs < 0:
+         print( "expecting rs (record duration, secs) to be a positive integer" )
+         return
+      
+      # return instance of fixed size
+      return inst(proj.eng.empty_inst(id, nr, rs, startdate, starttime ))
 
    #------------------------------------------------------------------------
    def clear(self):
@@ -825,16 +843,16 @@ class inst:
       return df
       
    # --------------------------------------------------------------------------------
-   def psd( self, ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , xlines = None , ylines = None ):
+   def psd( self, ch, var = 'PSD' , minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
       """Generates a PSD plot (from PSD or MTM)"""
       if ch is None: return
       if type(ch) is not list: ch = [ ch ]
 
       if var == 'PSD':
-         self.eval( 'PSD spectrum dB sig=' + ','.join(ch) )
+         self.eval( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
          df = self.table( 'PSD' , 'CH_F' )
       else:
-         self.eval( 'MTM tw=15 dB sig=' + ','.join(ch) )
+         self.eval( 'MTM tw=15 dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
          df = self.table( 'MTM' , 'CH_F' )
          
       psd( df = df , ch = ch , var = var ,
@@ -843,16 +861,16 @@ class inst:
       
     
    # --------------------------------------------------------------------------------
-   def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = None , w = 0.025 ):
+   def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = 25 , w = 0.025 ):
       """Generates an epoch-level PSD spectrogram (from PSD or MTM)"""
       if ch is None: return
       if type(ch) is not list: ch = [ ch ]
 
       if var == 'PSD':
-         self.eval( 'PSD epoch-spectrum dB sig=' + ','.join(ch) )
+         self.eval( 'PSD epoch-spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
          df = self.table( 'PSD' , 'CH_E_F' )
       else:
-         self.eval( 'MTM epoch-spectra epoch epoch-output dB tw=15 sig=' + ','.join(ch) )
+         self.eval( 'MTM epoch-spectra epoch epoch-output dB tw=15 max=' + str(maxf) + ' sig=' + ','.join(ch) )
          df = self.table( 'MTM' , 'CH_E_F' )
          
       spec( df = df , ch = None , var = var ,
@@ -1156,13 +1174,13 @@ class inst:
       return spec( res , ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
 
    # --------------------------------------------------------------------------------
-   def psd(self, ch, minf = None, maxf = None, minp = None, maxp = None , xlines = None , ylines = None ):
+   def psd(self, ch, minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
       """Spectrogram plot for a given channel 'ch'"""
       if type( ch ) is not str:
          return
       if all( self.has( ch ) ) is not True:
          return
-      res = self.silent_proc( "PSD spectrum dB sig="+ch )[ 'PSD: CH_F' ]
+      res = self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )[ 'PSD: CH_F' ]
       return psd( res , ch, minf = minf, maxf = maxf, minp = minp, maxp = maxp , xlines = xlines , ylines = ylines )
 
       
@@ -2166,12 +2184,12 @@ def scope( p,
         if band_hjorth_sel.value is True:
            S = np.transpose( ss.get_hjorths( pow_sel.value ) )
            S = np.asarray(S,dtype=object)
-           S[np.isnan(S.astype(np.float_))] = None
+           S[np.isnan(S.astype(np.float64))] = None
            bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
         else:
            S = np.transpose( ss.get_bands( pow_sel.value ) )
            S = np.asarray(S,dtype=object)
-           S[np.isnan(S.astype(np.float_))] = None
+           S[np.isnan(S.astype(np.float64))] = None
            bg.update_traces({'z': S } , selector = {'type':'heatmap'} )
 
     def pop_a1(change):
@@ -2302,6 +2320,10 @@ def scope( p,
     update_bandpower(None)
     ss.set_scaling( len(chbox.value) , len( anbox.value) , 2**float(yscale.value) , float(yspace.value) , header_height, footer_height , annot_height )
 
+    ss.window( 0 , 30 )
+    epoch.value = str(1);
+
+    redraw()
     return container_app
 
 
@@ -2319,7 +2341,7 @@ class moonbeam:
       """ Initiate Moonbeam with an NSRR token """
       self.nsrr_tok = nsrr_tok
       self.df1 = self.cohorts()
-      if cdir is None: cdir = os.path.join( tempfile.gettempdir() , 'luna-mmonbeam' )
+      if cdir is None: cdir = os.path.join( tempfile.gettempdir() , 'luna-moonbeam' )
       self.set_cache(cdir)
 
    def set_cache(self,cdir):
@@ -2356,21 +2378,20 @@ class moonbeam:
       return self.df2
 
    
-   def inst(self, iid, cohort = None ):
-      """ Create an instance of a record, either downloaded or cached """    
+   def inst(self, iid ):
+      """ Create an instance of a record, either downloaded or cached """
       if self.df2 is None: return
       if self.curr_cohort is None: return
       
       # ensure we have this file 
-      self.pull( iid , cohort )
+      self.pull( iid , self.curr_cohort )
 
-      # initiate an instance (from singleton proj)
-      proj1 = proj()
+      # ensure we have a proj (from proj singleton)
+      proj1 = proj(False)
       p = proj1.inst( self.curr_id )
-
       edf1 = str( pathlib.Path( self.cdir ).joinpath( self.curr_edf ).expanduser().resolve() )      
       p.attach_edf( edf1 ) 
-
+      
       if self.curr_annot is not None:
          annot1 = str( pathlib.Path( self.cdir ).joinpath( self.curr_annot ).expanduser().resolve() )
          p.attach_annot( annot1 )
@@ -2379,10 +2400,8 @@ class moonbeam:
       return p
 
     
-   def pull(self, iid , cohort = None ):
-      """ Download an individual record (if not already cached) """    
-      if cohort is None and self.df2.empty: return False
-      if self.df2.empty: files( cohort )
+   def pull(self, iid , cohort ):
+      """ Download an individual record (if not already cached) """      
       if self.df2.empty: return False
 
       # iid

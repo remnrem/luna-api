@@ -114,8 +114,13 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "inst" ,
 	  py::overload_cast<const std::string&>
 	  (&lunapi_t::inst,py::const_),
-	  "Generate an empty lunapi-instance" )
+	  "Generate an lunapi-instance" )
     
+    .def( "empty_inst" ,
+	  py::overload_cast<const std::string&,const int, const int, const std::string&, const std::string&>
+	  (&lunapi_t::inst,py::const_),
+	  "Generate an empty lunapi-instance of fixed record size" )
+
     .def( "inst" ,
 	  py::overload_cast<const std::string&,const std::string &>
 	  (&lunapi_t::inst,py::const_),
