@@ -4,20 +4,20 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "lunapi"
-version = "0.1.1"
+version = "0.1.2"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9"
 dependencies = [
-  'matplotlib',
-  'pandas',
-  'numpy',
-  'scipy',
-  'plotly',
-  'nbformat',
-  'ipywidgets',
-  'IPython'
-]
+  'pandas>=2,<3',
+  'numpy>=2',
+  'matplotlib>=3,<4.0',
+  'scipy>=1,<2',
+  'plotly>=5,<6',
+  'nbformat>=5,<6',
+  'ipywidgets>=8,<9',
+  'tqdm>=4,<5' ,
+  'IPython' ]
 
 keywords = ["Sleep", "EEG", "PSG", "Luna", "Signal processing" ]
 
