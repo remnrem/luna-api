@@ -24,8 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       # This step checks out your repository's code
       # By default, this runner doesn't have a copy of your repository's code
-      # The checkout action copies your repository's code into the runner's workspace
-
+      # The checkout action copies your repository's code into the runner's workspace          
       - name: Set up Python
         uses: actions/setup-python@v4
         # set up a specific Python version (like Python 3.8)

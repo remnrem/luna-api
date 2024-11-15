@@ -6,7 +6,23 @@ mkdir ${GITHUB_WORKSPACE}/depends
 
 cd ${GITHUB_WORKSPACE}/depends
 
+# CMAKE
+#sudo apt update
+#sudo apt install -y wget
+#wget https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz
+#tar -zxvf cmake-3.8.2.tar.gz
+#cd cmake-3.8.2
+#./bootstrap
+#make -j$(nproc)
+#make install
+
+#cmake --version # Verify that CMake 3.8 is installed
+## Copy CMake to GitHub workspace
+#cp -r ./bin/* ${GITHUB_WORKSPACE}/
+#cp -r ./bin/* ${GITHUB_WORKSPACE}/depends/
+
 # FFTW
+cd ${GITHUB_WORKSPACE}/depends/
 curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
 tar -xzvf fftw-3.3.10.tar.gz 
 cd fftw-3.3.10
