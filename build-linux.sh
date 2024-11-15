@@ -4,12 +4,10 @@ cp CMakeLists.txt.GITHUB CMakeLists.txt
 cd ${GITHUB_WORKSPACE}
 mkdir ${GITHUB_WORKSPACE}/depends
 
-cd ${GITHUB_WORKSPACE}/depends
-
 # CMAKE
 #apt update
 #apt install -y wget cmake
-wget https://github.com/Kitware/CMake/releases/download/v3.31.0/cmake-3.31.0.tar.gz
+curl -O https://github.com/Kitware/CMake/releases/download/v3.31.0/cmake-3.31.0.tar.gz
 #wget https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz
 tar -zxvf cmake-3.31.0.tar.gz
 cd cmake-3.31.0
