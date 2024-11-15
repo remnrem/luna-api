@@ -37,6 +37,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.29.2'
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16.2
         env:
