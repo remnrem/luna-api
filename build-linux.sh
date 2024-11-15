@@ -7,9 +7,9 @@ mkdir ${GITHUB_WORKSPACE}/depends
 # CMAKE
 #apt update
 #apt install -y wget cmake
-curl -O https://github.com/Kitware/CMake/releases/download/v3.31.0/cmake-3.31.0.tar.gz
+curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
 #wget https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz
-tar -zxvf cmake-3.31.0.tar.gz
+tar -xzvf cmake-3.31.0.tar.gz
 cd cmake-3.31.0
 ./bootstrap
 make -j2
