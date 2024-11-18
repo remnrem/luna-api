@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Publish (linux aarch64) 
 
 on: [ workflow_dispatch ]
 #on:
@@ -7,19 +7,16 @@ on: [ workflow_dispatch ]
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build wheels on ubuntu aarch64
+    runs-on: [ ubuntu-22.04 , aarch64 ]
     
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            job_name: "Ubuntu AMD64 Build"
-          - os: macos-14
-            job_name: "MacOs 14 ARM64 Build"
-          - os: macos-13
-            job_name: "MacOs 13 x86_64 Build"
+          - os: ubuntu-22.04
+            job_name: "Ubuntu ARM64 Build"
+
     steps:
       - uses: actions/checkout@v4
       # This step checks out your repository's code

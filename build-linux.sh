@@ -4,15 +4,14 @@ cp CMakeLists.txt.GITHUB CMakeLists.txt
 cd ${GITHUB_WORKSPACE}
 mkdir ${GITHUB_WORKSPACE}/depends
 
+yum install -y cmake || apk add --upgrade cmake || apt-get install cmake
 
-
-
-
-#Programs and libraries are not installed on the CI runner host, but rather should be installed inside the container -
-# using yum for manylinux2010 or manylinux2014,
-# apt-get for manylinux_2_24,
-# dnf for manylinux_2_28 and
-# apk for musllinux_1_1 or musllinux_1_2, or manually. The same goes for environment variables that are potentially needed to customize# the wheel building.
+#Programs and libraries are not installed on the CI runner host, but
+# rather should be installed inside the container - using yum for
+# manylinux2010 or manylinux2014, apt-get for manylinux_2_24, dnf for
+# manylinux_2_28 and apk for musllinux_1_1 or musllinux_1_2, or
+# manually. The same goes for environment variables that are
+# potentially needed to customize# the wheel building.
 
 #cibuildwheel supports this by providing the CIBW_ENVIRONMENT and
 #CIBW_BEFORE_ALL options to setup the build environment inside the
@@ -20,21 +19,12 @@ mkdir ${GITHUB_WORKSPACE}/depends
 
 
 # CMAKE
-#apt update
-#apt install -y wget cmake
-curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
-#wget https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz
-tar -xzvf cmake-3.31.0.tar.gz
-cd cmake-3.31.0
-./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
-make -j2
-make install
-
-#cmake --version # Verify that CMake 3.8 is installed
-## Copy CMake to GitHub workspace
-#cp -r ./bin/* ${GITHUB_WORKSPACE}/
-#cp -r ./bin/* ${GITHUB_WORKSPACE}/depends/
-
+#curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
+#tar -xzvf cmake-3.31.0.tar.gz
+#cd cmake-3.31.0
+#./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
+#make -j2
+#make install
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
