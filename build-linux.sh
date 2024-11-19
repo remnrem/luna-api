@@ -4,7 +4,12 @@ cp CMakeLists.txt.GITHUB CMakeLists.txt
 cd ${GITHUB_WORKSPACE}
 mkdir ${GITHUB_WORKSPACE}/depends
 
+
+cmake --version
+
 yum install -y cmake || apk add --upgrade cmake || apt-get install cmake
+
+cmake --version
 
 #Programs and libraries are not installed on the CI runner host, but
 # rather should be installed inside the container - using yum for
