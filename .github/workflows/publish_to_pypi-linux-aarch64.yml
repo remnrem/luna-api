@@ -8,14 +8,14 @@ on: [ workflow_dispatch ]
 jobs:
   build_wheels:
     name: Build wheels on ubuntu aarch64
-    runs-on: [ ubuntu-22.04 , aarch64 ]
+    runs-on: ubuntu-latest
     
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-22.04
-            job_name: "Ubuntu ARM64 Build"
+          - os: ubuntu-latest
+            job_name: "Ubuntu Build"
 
     steps:
       - uses: actions/checkout@v4
