@@ -7,11 +7,9 @@ mkdir ${GITHUB_WORKSPACE}/depends
 
 cmake --version
 
-
-sudo apt-get update
-sudo apt-get install cmake
-
-# yum install -y cmake || apk add --upgrade cmake || apt-get install cmake
+yum check-update
+yum install -y cmake
+    #|| apk add --upgrade cmake || apt-get install cmake
 
 cmake --version
 
