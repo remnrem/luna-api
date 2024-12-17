@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v0.1.2, 14-Nov-2024
+# v0.1.2, 17-Dec-2024
 
 import lunapi.lunapi0 as _luna
 
@@ -842,40 +842,6 @@ class inst:
       #df = df.drop(columns = ['ID','TP','MID','INTERVAL'] )
       return df
       
-   # --------------------------------------------------------------------------------
-   def psd( self, ch, var = 'PSD' , minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
-      """Generates a PSD plot (from PSD or MTM)"""
-      if ch is None: return
-      if type(ch) is not list: ch = [ ch ]
-
-      if var == 'PSD':
-         self.eval( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = self.table( 'PSD' , 'CH_F' )
-      else:
-         self.eval( 'MTM tw=15 dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = self.table( 'MTM' , 'CH_F' )
-         
-      psd( df = df , ch = ch , var = var ,
-           minf = minf , maxf = maxf , minp = minp , maxp = maxp ,
-           xlines = xlines , ylines = ylines )
-      
-    
-   # --------------------------------------------------------------------------------
-   def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = 25 , w = 0.025 ):
-      """Generates an epoch-level PSD spectrogram (from PSD or MTM)"""
-      if ch is None: return
-      if type(ch) is not list: ch = [ ch ]
-
-      if var == 'PSD':
-         self.eval( 'PSD epoch-spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = self.table( 'PSD' , 'CH_E_F' )
-      else:
-         self.eval( 'MTM epoch-spectra epoch epoch-output dB tw=15 max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = self.table( 'MTM' , 'CH_E_F' )
-         
-      spec( df = df , ch = None , var = var ,
-            mine = mine , maxe = maxe , minf = minf , maxf = maxf , w = w )
-
 
    # --------------------------------------------------------------------------------
    #  tfview : spectral regional viewer
@@ -1163,7 +1129,49 @@ class inst:
       if type(ch) is not list: ch = [ ch ]
       return self.edf.has_channels( ch )
 
-   # --------------------------------------------------------------------------------                                                                  
+   # --------------------------------------------------------------------------------
+#   def psd(self, ch, minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
+#      """Spectrogram plot for a given channel 'ch'"""
+#      if type( ch ) is not str: return
+#      if all( self.has( ch ) ) is not True: return
+#      res = self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )[ 'PSD: CH_F' ]
+#      return psd( res , ch, minf = minf, maxf = maxf, minp = minp, maxp = maxp , xlines = xlines , ylines = ylines )
+
+   # --------------------------------------------------------------------------------
+   def psd( self, ch, var = 'PSD' , minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
+      """Generates a PSD plot (from PSD or MTM) for one or more channel(s)"""
+      if ch is None: return
+      if type(ch) is not list: ch = [ ch ]
+
+      if var == 'PSD':
+         res = self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
+         df = res[ 'PSD: CH_F' ]
+      else:
+         res = self.silent_proc( 'MTM tw=15 dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
+         df = res[ 'MTM: CH_F' ]
+         
+      psd( df = df , ch = ch , var = var ,
+           minf = minf , maxf = maxf , minp = minp , maxp = maxp ,
+           xlines = xlines , ylines = ylines )
+      
+    
+   # --------------------------------------------------------------------------------
+#   def spec( self, ch, var = 'PSD' , mine = None, maxe = None, minf = None, maxf = 25 , w = 0.025 ):
+#      """Generates an epoch-level PSD spectrogram (from PSD or MTM)"""
+#      if ch is None: return
+#      if type(ch) is not list: ch = [ ch ]
+#
+#      if var == 'PSD':
+#         self.eval( 'PSD epoch-spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
+#         df = self.table( 'PSD' , 'CH_E_F' )
+#      else:
+#         self.eval( 'MTM epoch-spectra epoch epoch-output dB tw=15 max=' + str(maxf) + ' sig=' + ','.join(ch) )
+#         df = self.table( 'MTM' , 'CH_E_F' )
+#         
+#      spec( df = df , ch = None , var = var ,
+#            mine = mine , maxe = maxe , minf = minf , maxf = maxf , w = w )
+
+   # --------------------------------------------------------------------------------
    def spec(self,ch,mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
       """PSD given channel 'ch'"""
       if type( ch ) is not str:
@@ -1173,15 +1181,6 @@ class inst:
       res = self.silent_proc( "PSD epoch-spectrum dB sig="+ch )[ 'PSD: CH_E_F' ]
       return spec( res , ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
 
-   # --------------------------------------------------------------------------------
-   def psd(self, ch, minf = None, maxf = 25, minp = None, maxp = None , xlines = None , ylines = None ):
-      """Spectrogram plot for a given channel 'ch'"""
-      if type( ch ) is not str:
-         return
-      if all( self.has( ch ) ) is not True:
-         return
-      res = self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )[ 'PSD: CH_F' ]
-      return psd( res , ch, minf = minf, maxf = maxf, minp = minp, maxp = maxp , xlines = xlines , ylines = ylines )
 
       
 # --------------------------------------------------------------------------------
