@@ -6,13 +6,16 @@ cd ${GITHUB_WORKSPACE}
 mkdir ${GITHUB_WORKSPACE}/depends
 
 
-cmake --version
+#cmake --version
 
 yum check-update
-yum install -y cmake
+yum install -y curl
+
+#yum check-update
+#yum install -y cmake
     #|| apk add --upgrade cmake || apt-get install cmake
 
-cmake --version
+#cmake --version
 
 #Programs and libraries are not installed on the CI runner host, but
 # rather should be installed inside the container - using yum for
@@ -27,12 +30,14 @@ cmake --version
 
 
 # CMAKE
-#curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
-#tar -xzvf cmake-3.31.0.tar.gz
-#cd cmake-3.31.0
-#./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
-#make -j2
-#make install
+curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
+tar -xzvf cmake-3.31.0.tar.gz
+cd cmake-3.31.0
+./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
+make -j2
+make install
+
+cmake --version
 
 # LightGBM
 cd ${GITHUB_WORKSPACE}/depends/
