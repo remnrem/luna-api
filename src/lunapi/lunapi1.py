@@ -304,6 +304,8 @@ class proj:
       # clear all
       if key is None:
          proj.eng.clear_all_opts()
+         # and a spectial case: the sig list
+         self.vars( 'sig', '' )
          return
 
       # clear some/one
@@ -1178,7 +1180,11 @@ class inst:
          return
       if all( self.has( ch ) ) is not True:
          return
-      res = self.silent_proc( "PSD epoch-spectrum dB sig="+ch )[ 'PSD: CH_E_F' ]
+      if minf is None:
+         minf=0.5
+      if maxf is None:
+         maxf=25
+      res = self.silent_proc( "PSD epoch-spectrum dB sig="+ch+" min="+str(minf)+" max="+str(maxf) )[ 'PSD: CH_E_F' ]
       return spec( res , ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
 
 
