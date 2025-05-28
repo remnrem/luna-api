@@ -30,7 +30,7 @@ yum install -y curl
 
 
 # CMAKE
-curl -O https://cmake.org/files/LatestRelease/cmake-3.31.0.tar.gz
+curl -O https://cmake.org/files/v3.31/cmake-3.31.0.tar.gz
 tar -xzvf cmake-3.31.0.tar.gz
 cd cmake-3.31.0
 ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
