@@ -2418,7 +2418,7 @@ class moonbeam:
       self.pull_file( self.curr_edf )
 
       # EDFZ .idx
-      if re.search('\.edf\.gz$',self.curr_edf,re.IGNORECASE) or re.search('\.edfz$',self.curr_edf,re.IGNORECASE):
+      if re.search(r'\.edf\.gz$',self.curr_edf,re.IGNORECASE) or re.search(r'\.edfz$',self.curr_edf,re.IGNORECASE):
          self.pull_file( self.curr_edf + '.idx' )
 
       # annots (optional)
