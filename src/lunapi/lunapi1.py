@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v1.2.3, 28-May-2025
+# v1.3.0, 05-Sep-2025
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +33,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v1.2.3"
+lp_version = "v1.3.0"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -1196,6 +1196,47 @@ class inst:
 # --------------------------------------------------------------------------------
 
 
+def fetch_doms():
+   """Fetch all command domains"""
+   return _luna.fetch_doms( True )
+
+def fetch_cmds( dom ):
+   """Fetch all commands"""
+   return _luna.fetch_cmds( dom, True )
+
+def fetch_params( cmd ):
+   """Fetch all command parameters"""
+   return _luna.fetch_params( cmd, True )
+
+def fetch_tbls( cmd ):
+   """Fetch all command tables"""
+   return _luna.fetch_tbls( cmd, True )
+
+def fetch_vars( cmd, tbl ):
+   """Fetch all command/table variables"""
+   return _luna.fetch_vars( cmd, tbl, True )
+
+def fetch_desc_dom( dom ):
+   """Description for a domain"""
+   return _luna.fetch_desc_dom( dom  )
+
+def fetch_desc_cmd( cmd ):
+   """Description for a command"""
+   return _luna.fetch_desc_cmd( cmd )
+
+def fetch_desc_param( cmd , param ):
+   """Description for a command/parameter"""
+   return _luna.fetch_desc_param( cmd, param )
+
+def fetch_desc_tbl( cmd , tbl ):
+   """Description for a command/table"""
+   return _luna.fetch_desc_tbl( cmd, tbl )
+
+def fetch_desc_var( cmd, tbl, var ):
+   """Fetch all command/table variable"""
+   return _luna.fetch_desc_var( cmd, tbl, var )
+
+
 # --------------------------------------------------------------------------------
 def cmdfile( f ):
    """load and parse a Luna command script from a file"""
@@ -1726,6 +1767,14 @@ class segsrv:
    def get_annots_yaxes(self,ann):
       return self.segsrv.get_evnts_yaxes( ann )
 
+   def set_annot_format6(self,b):
+      self.segsrv.set_evnt_format6(b)
+      
+   def get_annots_xaxes_ends(self,ann):
+      return self.segsrv.get_evnts_xaxes_ends( ann )
+
+   def get_annots_yaxes_ends(self,ann):
+      return self.segsrv.get_evnts_yaxes_ends( ann )
 
 
 
@@ -1812,7 +1861,6 @@ def scope( p,
     if anncols is not None:
         for key, value in anncols.items(): apalette[ key ] = value
     
-
 
     # define widgets
 
@@ -2180,8 +2228,8 @@ def scope( p,
                 g.data[ gidx ].visible = True
 
     def rescale(change):
-        ss.set_scaling( len(chbox.value) , len( anbox.value) , 2**float(yscale.value) , float(yspace.value) , header_height, footer_height , annot_height )
-        redraw()
+       ss.set_scaling( len(chbox.value) , len( anbox.value) , 2**float(yscale.value) , float(yspace.value) , header_height, footer_height , annot_height )
+       redraw()
     
     def update_bandpower(change):
         if pow_sel.value is None: return 
@@ -2486,4 +2534,6 @@ class moonbeam:
       df2 = df[ ~ df['Variable'].isin( pri ) ] 
       df = pd.concat( [ df1 , df2 ] )
       return df
+
+
 
