@@ -50,6 +50,39 @@ PYBIND11_MODULE(lunapi0, m) {
   m.def( "version" ,
 	 &lunapi_t::version ,
 	 "Version of Luna" );
+
+  m.def( "fetch_doms" ,
+	 &lunapi_t::fetch_doms ,
+	 "Fetch all command domains" );
+  m.def( "fetch_cmds" ,
+	 &lunapi_t::fetch_cmds ,
+	 "Fetch all commands" );
+  m.def( "fetch_params" ,
+	 &lunapi_t::fetch_params ,
+	 "Fetch all parameters for a command" );
+  m.def( "fetch_tbls" ,
+	 &lunapi_t::fetch_tbls ,
+	 "Fetch all tables for a command" );
+  m.def( "fetch_vars" ,
+	 &lunapi_t::fetch_vars ,
+	 "Fetch all variables for a command/table" );
+
+  m.def( "fetch_desc_dom" ,
+         &lunapi_t::fetch_desc_dom ,
+         "Description for a domain" );
+  m.def( "fetch_desc_cmd" ,
+         &lunapi_t::fetch_desc_cmd ,
+         "Description for a command" );
+  m.def( "fetch_desc_param" ,
+         &lunapi_t::fetch_desc_param ,
+         "Description for a command/parameter" );
+  m.def( "fetch_desc_tbl" ,
+         &lunapi_t::fetch_desc_tbl ,
+         "Description for a command/table" );  
+  m.def( "fetch_desc_var" ,
+         &lunapi_t::fetch_desc_var ,
+         "Description for a command/table/variable" );
+
   
   //
   // lunapi_t engine class
@@ -165,6 +198,9 @@ PYBIND11_MODULE(lunapi0, m) {
     
     .def("tables",py::overload_cast<>(&lunapi_t::results,py::const_) ,
 	 "Return a result table (defined by a command/strata pair) from a prior eval()" );
+    
+
+  
   
   //
   // lunapi_inst_t : individual instance (EDF/annotation pair)
@@ -341,6 +377,9 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "compile_evts" , &segsrv_t::compile_evts )
     .def( "get_evnts_xaxes" , &segsrv_t::get_evnts_xaxes )
     .def( "get_evnts_yaxes" , &segsrv_t::get_evnts_yaxes )
+    .def( "set_evnt_format6" , &segsrv_t::set_annot_format6 )
+    .def( "get_evnts_xaxes_ends" , &segsrv_t::get_evnts_xaxes_ends )
+    .def( "get_evnts_yaxes_ends" , &segsrv_t::get_evnts_yaxes_ends )
     .def( "fetch_all_annots", &segsrv_t::fetch_all_evts )
     .def( "fetch_annots" , &segsrv_t::fetch_evts ); 
 
