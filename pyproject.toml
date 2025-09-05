@@ -20,6 +20,9 @@ dependencies = [
   'requests>=2,<3',
   'IPython' ]
 
+[tool.cibuildwheel]
+skip = "pp*"
+
 keywords = ["Sleep", "EEG", "PSG", "Luna", "Signal processing" ]
 
 authors = [
