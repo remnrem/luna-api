@@ -19,10 +19,6 @@ dependencies = [
   'tqdm>=4,<5' ,
   'requests>=2,<3',
   'IPython' ]
-
-[tool.cibuildwheel]
-skip = "pp*"
-
 keywords = ["Sleep", "EEG", "PSG", "Luna", "Signal processing" ]
 
 authors = [
@@ -48,6 +44,9 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13"
 ]
+
+[tool.cibuildwheel]
+skip = "pp*"
 
 [project.urls]
 "www" = "https://zzz.bwh.harvard.edu/luna"
