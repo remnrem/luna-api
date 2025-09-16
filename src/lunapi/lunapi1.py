@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v1.3.0, 05-Sep-2025
+# v1.3.1, 16-Sep-2025
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +33,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v1.3.0"
+lp_version = "v1.3.1"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -176,6 +176,10 @@ class proj:
    def reset(self):
       """ Drop Luna problem flag """
       proj.eng.reset()
+
+   def reinit(self):
+      """ Re-initialize project """
+      proj.eng.reinit()
 
    #------------------------------------------------------------------------
    
@@ -1663,8 +1667,8 @@ class segsrv:
    def get_gaps(self):
       return self.segsrv.get_gaps()
 
-   def set_scaling(self, nchs, nanns = 0 , yscale = 1 , ygroup = 1 , yheader = 0.05 , yfooter = 0.05 , scaling_fixed_annot = 0.1 ):
-      self.segsrv.set_scaling( nchs, nanns, yscale, ygroup, yheader, yfooter, scaling_fixed_annot )
+   def set_scaling(self, nchs, nanns = 0 , yscale = 1 , ygroup = 1 , yheader = 0.05 , yfooter = 0.05 , scaling_fixed_annot = 0.1 , clip = True):
+      self.segsrv.set_scaling( nchs, nanns, yscale, ygroup, yheader, yfooter, scaling_fixed_annot , clip )
 
    def get_scaled_signal(self, ch, n1):
       return self.segsrv.get_scaled_signal( ch , n1 )
@@ -1672,8 +1676,11 @@ class segsrv:
    def fix_physical_scale(self,ch,lwr,upr):
       self.segsrv.fix_physical_scale( ch, lwr, upr )
 
+   def empirical_physical_scale(self,ch):
+      self.segsrv.empirical_physical_scale( ch )
+
    def free_physical_scale( self, ch ):
-      self.segsrv.free_physical_scal( ch )
+      self.segsrv.free_physical_scale( ch )
 
    def set_epoch_size( self, s ):
       self.segsrv.set_epoch_size( s )

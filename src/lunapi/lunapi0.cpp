@@ -96,6 +96,9 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "build_sample_list" ,
 	  &lunapi_t::build_sample_list,
 	  "Load a sample list from a file" )
+    .def( "set_sample_list",
+	  &lunapi_t::set_sample_list,
+	  "Set sample list directly" )
     .def( "get_sample_list" ,
           &lunapi_t::sample_list,
           "Return the loaded sample list" )
@@ -110,7 +113,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "is_silenced" , &lunapi_t::is_silenced )
 
     .def( "flush" , &lunapi_t::flush )
-    
+    .def( "reinit" , &lunapi_t::re_init )
     .def( "reset" , &lunapi_t::reset )
     
     .def( "include" ,
@@ -342,6 +345,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_time_scale", &segsrv_t::get_time_scale )
     .def( "set_scaling", &segsrv_t::set_scaling )
     .def( "fix_physical_scale", &segsrv_t::fix_physical_scale )
+    .def( "empirical_physical_scale", &segsrv_t::empirical_physical_scale )
     .def( "free_physical_scale", &segsrv_t::free_physical_scale )
     .def( "get_scaled_signal", &segsrv_t::get_scaled_signal )
     .def( "get_gaps" , &segsrv_t::get_gaps )
