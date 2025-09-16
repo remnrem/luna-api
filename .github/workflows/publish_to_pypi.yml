@@ -27,17 +27,35 @@ jobs:
       # The checkout action copies your repository's code into the runner's workspace          
       - name: Set up Python
         uses: actions/setup-python@v4
-        # set up a specific Python version (like Python 3.8)
-        # This step installs Python 3.8 on the runner
         with:
-          python-version: '3.8'
+          python-version: '3.9'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@v2.21.3
+        env:
+          CIBW_ARCHS_MACOS: "native"
+          CIBW_ARCHS_LINUX: "x86_64"
+
+          # avoid building ninja from source on all OSes
+          CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
+          CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja"
+
+          # keep your scripts; they still run
+          CIBW_BEFORE_ALL_LINUX: "sh build-linux.sh"
+          CIBW_BEFORE_ALL_MACOS: "sh build-macos.sh"
+          CIBW_BEFORE_ALL_WINDOWS: " "
+          
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-*"
+        with:
+          output-dir: wheelhouse
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21.3
         env:
            CIBW_ARCHS_MACOS: "native"
            CIBW_ARCHS_LINUX: "x86_64"
