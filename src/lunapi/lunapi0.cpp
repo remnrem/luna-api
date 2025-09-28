@@ -220,8 +220,6 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "attach_annot",&lunapi_inst_t::attach_annot,
 	  "Attach an annotation file to the current EDF" ,
 	  "annotfile"_a )
-    
-    
     .def( "refresh", &lunapi_inst_t::refresh,
 	  "Reattach the current EDF")
     .def( "drop", &lunapi_inst_t::drop,
@@ -292,14 +290,13 @@ PYBIND11_MODULE(lunapi0, m) {
 	 "Clear individual-variables")
     .def("clear_selected_ivar",&lunapi_inst_t::clear_selected_ivar,
 	 "Clear selected individual-variables")
-    
-    
+
     .def("eval",&lunapi_inst_t::eval,
 	 "Evaluate Luna commands" )
-    
+
     .def("proc",&lunapi_inst_t::eval_return_data,
 	 "Similar to eval(), but returns all data tables" )
-    
+
     .def("commands",&lunapi_inst_t::commands,
 	 "List commands resulting from a prior eval()" )
     .def("strata",&lunapi_inst_t::strata,
