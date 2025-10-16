@@ -215,8 +215,7 @@ PYBIND11_MODULE(lunapi0, m) {
     // 	 py::arg( "id" ) = "id1" )
     
     .def( "attach_edf", &lunapi_inst_t::attach_edf,
-	  "Attach an EDF" ,
-	  "edffile"_a )
+	  "Attach an EDF" )	  
     .def( "attach_annot",&lunapi_inst_t::attach_annot,
 	  "Attach an annotation file to the current EDF" ,
 	  "annotfile"_a )
@@ -294,6 +293,20 @@ PYBIND11_MODULE(lunapi0, m) {
     .def("eval",&lunapi_inst_t::eval,
 	 "Evaluate Luna commands" )
 
+    .def("eval_lunascope",
+	 [](lunapi_inst_t& self, const std::string& cmd){
+	   py::gil_scoped_release r;
+	   return self.eval(cmd); // long C++ work, no Python API
+	 },
+	 "Evaluate Luna commands without holding the GIL")
+
+    .def("eval_dummy", // debug code only
+	 [](lunapi_inst_t& self, const std::string& cmd){
+	   py::gil_scoped_release r;   
+	   return self.eval_dummy(cmd);       
+	 },
+	 "Evaluate Luna commands without holding the GIL")
+    
     .def("proc",&lunapi_inst_t::eval_return_data,
 	 "Similar to eval(), but returns all data tables" )
 
@@ -334,6 +347,17 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "populate", &segsrv_t::populate,
 	  "Initiate segment-server channels, annots" ,
 	  "chs"_a , "anns"_a )
+    
+    .def( "populate_lunascope",
+	  []( segsrv_t & self ,
+	      const std::vector<std::string>& chs,
+	      const std::vector<std::string>& anns ) -> int {
+	    py::gil_scoped_release r;
+	    return self.populate( chs , anns );
+	  },	  
+	  "Initiate segment-server channels, annots" ,
+	  "chs"_a , "anns"_a )
+    
     .def( "set_window", &segsrv_t::set_window,	  
 	  "Define current window" ,
 	  "start"_a , "stop"_a )
@@ -366,6 +390,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_window_left_hms" , &segsrv_t::get_window_left_hms )
     .def( "get_window_right_hms" , &segsrv_t::get_window_right_hms )
     .def( "get_clock_ticks" , &segsrv_t::get_clock_ticks )
+    .def( "get_hour_ticks" , &segsrv_t::get_hour_ticks )
     .def( "get_window_phys_range" , &segsrv_t::get_window_phys_range )
     .def( "get_ylabel" , &segsrv_t::get_ylabel )
     .def( "throttle" , &segsrv_t::throttle )

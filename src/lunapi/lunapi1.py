@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v1.3.1, 16-Sep-2025
+# v1.3.4, 16-Oct-2025
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +33,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v1.3.1"
+lp_version = "v1.3.4"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -652,7 +652,14 @@ class inst:
       _proj = proj(False)
       silence_mode = _proj.is_silenced()
       _proj.silence(True,False)
-      df = self.proc( "HEADERS" )[ 'HEADERS: CH' ]
+
+      res = self.proc( "HEADERS" )
+
+      if "HEADERS: CH" in res:
+         df = res["HEADERS: CH"]
+      else:
+         df = None  
+    
       _proj.silence( silence_mode , False )
       return df
 
@@ -694,6 +701,15 @@ class inst:
       self.edf.eval( cmdstr )
       return self.strata()
       
+   #------------------------------------------------------------------------
+   def eval_dummy( self, cmdstr ):      
+      return self.edf.eval_dummy( cmdstr )
+
+   #------------------------------------------------------------------------
+   def eval_lunascope( self, cmdstr ):
+      """Evaluate one or more Luna commands, storing results internally, return console log"""
+      return self.edf.eval_lunascope( cmdstr )
+
    #------------------------------------------------------------------------
    def proc( self, cmdstr ):
       """Evaluate one or more Luna commands, returning results as an object"""
@@ -1738,7 +1754,10 @@ class segsrv:
    def get_clock_ticks( self , n = 6 ):
       assert type( n ) is int
       return self.segsrv.get_clock_ticks( n )
-   
+
+   def get_hour_ticks( self ):
+      return self.segsrv.get_hour_ticks()
+
    def get_window_phys_range( self , ch ):
       assert type(ch) is str
       return self.segsrv.get_window_phys_range( ch )
