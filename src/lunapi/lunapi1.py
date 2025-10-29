@@ -1781,8 +1781,8 @@ class segsrv:
    def get_annots(self):
       return self.segsrv.fetch_annots()
 
-   def get_all_annots(self,anns):
-      return self.segsrv.fetch_all_annots(anns)
+   def get_all_annots(self,anns,hms = False ):
+      return self.segsrv.fetch_all_annots(anns, hms )
 
    def compile_windowed_annots(self,anns):
       self.segsrv.compile_evts( anns )
