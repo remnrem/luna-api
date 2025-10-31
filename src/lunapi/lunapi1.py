@@ -1,7 +1,7 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v1.3.4, 16-Oct-2025
+# v1.3.6, 16-Oct-2025
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +33,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v1.3.4"
+lp_version = "v1.3.6"
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
@@ -1683,6 +1683,16 @@ class segsrv:
    def get_gaps(self):
       return self.segsrv.get_gaps()
 
+
+   def apply_filter(self,ch,sos):
+      return self.segsrv.apply_filter(ch,sos)
+   
+   def clear_filter(self,ch):
+      return self.segsrv.clear_filter(ch)
+
+   def clear_filters(self):
+      return self.segsrv.clear_filters()
+   
    def set_scaling(self, nchs, nanns = 0 , yscale = 1 , ygroup = 1 , yheader = 0.05 , yfooter = 0.05 , scaling_fixed_annot = 0.1 , clip = True):
       self.segsrv.set_scaling( nchs, nanns, yscale, ygroup, yheader, yfooter, scaling_fixed_annot , clip )
 

@@ -371,6 +371,10 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_scaled_signal", &segsrv_t::get_scaled_signal )
     .def( "get_gaps" , &segsrv_t::get_gaps )
 
+    .def( "apply_filter", &segsrv_t::apply_filter )
+    .def( "clear_filter", &segsrv_t::clear_filter )
+    .def( "clear_filters" , &segsrv_t::clear_filters )
+	  
     .def( "set_epoch_size", &segsrv_t::set_epoch_size )
     .def( "calc_bands", &segsrv_t::calc_bands ) // say which channels to do this for
     .def( "calc_hjorths" , &segsrv_t::calc_hjorths )
