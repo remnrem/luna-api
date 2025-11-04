@@ -1,7 +1,6 @@
 """lunapi1 module: a high-level wrapper around lunapi0 module functions"""
 
 # Luna Python interface (lunapi)
-# v1.3.6, 16-Oct-2025
 
 import lunapi.lunapi0 as _luna
 
@@ -33,7 +32,7 @@ class resources:
    POPS_LIB = 's2'
    MODEL_PATH = '/build/luna-models/'
 
-lp_version = "v1.3.6"
+lp_version = __version__
    
 # C++ singleton class (engine & sample list)
 # lunapi_t      --> luna
