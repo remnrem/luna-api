@@ -2,6 +2,8 @@
 
 # Luna Python interface (lunapi)
 
+from . import __version__
+
 import lunapi.lunapi0 as _luna
 
 import pandas as pd
