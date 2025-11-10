@@ -1798,6 +1798,9 @@ class segsrv:
    def compile_windowed_annots(self,anns):
       self.segsrv.compile_evts( anns )
 
+   def set_clip_xaxes(self,clip):
+      self.segsrv.set_clip_xaxes( clip )
+      
    def get_annots_xaxes(self,ann):
       return self.segsrv.get_evnts_xaxes( ann )
 
