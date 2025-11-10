@@ -214,8 +214,11 @@ PYBIND11_MODULE(lunapi0, m) {
     // .def(py::init<const std::string &>(),
     // 	 py::arg( "id" ) = "id1" )
     
-    .def( "attach_edf", &lunapi_inst_t::attach_edf,
-	  "Attach an EDF" )	  
+    .def( "attach_edf",
+	  &lunapi_inst_t::attach_edf,
+	  py::arg("filename"),
+	  py::arg("annots") = std::set<std::string>{},
+	  "Attach an EDF")
     .def( "attach_annot",&lunapi_inst_t::attach_annot,
 	  "Attach an annotation file to the current EDF" ,
 	  "annotfile"_a )
@@ -408,6 +411,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_evnts_xaxes" , &segsrv_t::get_evnts_xaxes )
     .def( "get_evnts_yaxes" , &segsrv_t::get_evnts_yaxes )
     .def( "set_evnt_format6" , &segsrv_t::set_annot_format6 )
+    .def( "set_clip_xaxes" , &segsrv_t::set_clip_xaxes )
     .def( "get_evnts_xaxes_ends" , &segsrv_t::get_evnts_xaxes_ends )
     .def( "get_evnts_yaxes_ends" , &segsrv_t::get_evnts_yaxes_ends )
     .def( "fetch_all_annots", &segsrv_t::fetch_all_evts )
