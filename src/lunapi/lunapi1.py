@@ -9,6 +9,7 @@ import lunapi.lunapi0 as _luna
 import pandas as pd
 import numpy as np
 from scipy.stats.mstats import winsorize
+from scipy.signal import butter, sosfilt
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from IPython.core import display as ICD
@@ -1700,6 +1701,9 @@ class segsrv:
    def get_scaled_signal(self, ch, n1):
       return self.segsrv.get_scaled_signal( ch , n1 )
 
+   def get_scaled_y(self, ch, y):
+      return self.segsrv.get_scaled_y0( ch , y)
+
    def fix_physical_scale(self,ch,lwr,upr):
       self.segsrv.fix_physical_scale( ch, lwr, upr )
 
@@ -1709,6 +1713,29 @@ class segsrv:
    def free_physical_scale( self, ch ):
       self.segsrv.free_physical_scale( ch )
 
+   # sigmods
+
+   def make_sigmod( self, mod_label, mod_ch, mod_type, sr, order, lwr, upr ):
+      sos = butter( order , [ lwr, upr ] , btype='band', fs=sr, output='sos' )
+      self.segsrv.make_sigmod( mod_label, mod_ch, mod_type, sos.reshape(-1) )
+
+   def make_sigmod_sos( self, mod_label, mod_ch, mod_type, sos ):
+      self.segsrv.make_sigmod( mod_label, mod_ch, mod_type, sos )
+
+   def make_sigmod_raw( self, mod_label, mod_ch, mod_type  ):
+      self.segsrv.make_sigmod( mod_label, mod_ch, 'raw' , [ ] )
+
+   def apply_sigmod( self, mod_label, mod_ch, slot ):
+      self.segsrv.apply_sigmod( mod_label, mod_ch, slot )
+
+   def get_sigmod_timetrack( self, bin ):
+      return self.segsrv.get_sigmod_timetrack( bin )
+
+   def get_sigmod_scaled_signal( self, bin ):
+      return self.segsrv.get_sigmod_scaled_signal( bin )
+
+   # epochs
+   
    def set_epoch_size( self, s ):
       self.segsrv.set_epoch_size( s )
 
@@ -1795,6 +1822,9 @@ class segsrv:
    def get_all_annots(self,anns,hms = False ):
       return self.segsrv.fetch_all_annots(anns, hms )
 
+   def get_all_annots_with_inst_ids(self,anns,hms = True ):
+      return self.segsrv.fetch_all_annots_with_inst_ids(anns, hms )
+   
    def compile_windowed_annots(self,anns):
       self.segsrv.compile_evts( anns )
 

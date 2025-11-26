@@ -364,6 +364,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "set_window", &segsrv_t::set_window,	  
 	  "Define current window" ,
 	  "start"_a , "stop"_a )
+    .def( "set_pixel_width" , &segsrv_t::set_pixel_width )
     .def( "get_signal", &segsrv_t::get_signal )
     .def( "get_timetrack", &segsrv_t::get_timetrack )
     .def( "get_time_scale", &segsrv_t::get_time_scale )
@@ -372,7 +373,13 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "empirical_physical_scale", &segsrv_t::empirical_physical_scale )
     .def( "free_physical_scale", &segsrv_t::free_physical_scale )
     .def( "get_scaled_signal", &segsrv_t::get_scaled_signal )
+    .def( "get_scaled_y", &segsrv_t::get_scaled_y )
     .def( "get_gaps" , &segsrv_t::get_gaps )
+
+    .def( "make_sigmod" , &segsrv_t::sigmod_make_mod )  // mod-lab, mod-ch, type, sos
+    .def( "apply_sigmod" , &segsrv_t::sigmod_apply_mod ) // mod-lab, target-ch, target-ch-slot
+    .def( "get_sigmod_timetrack" , &segsrv_t::sigmod_get_timetrack ) // bin (following apply_mod())
+    .def( "get_sigmod_scaled_signal" , &segsrv_t::sigmod_get_scaled_signal )  // bin (following apply_mod())
 
     .def( "apply_filter", &segsrv_t::apply_filter )
     .def( "clear_filter", &segsrv_t::clear_filter )
@@ -415,7 +422,7 @@ PYBIND11_MODULE(lunapi0, m) {
     .def( "get_evnts_xaxes_ends" , &segsrv_t::get_evnts_xaxes_ends )
     .def( "get_evnts_yaxes_ends" , &segsrv_t::get_evnts_yaxes_ends )
     .def( "fetch_all_annots", &segsrv_t::fetch_all_evts )
-    .def( "fetch_annots" , &segsrv_t::fetch_evts ); 
-
+    .def( "fetch_annots" , &segsrv_t::fetch_evts )
+    .def( "fetch_all_annots_with_inst_ids" , &segsrv_t::fetch_all_evts_with_inst_ids );
 }
 
