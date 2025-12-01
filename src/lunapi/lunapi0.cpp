@@ -312,6 +312,13 @@ PYBIND11_MODULE(lunapi0, m) {
     
     .def("proc",&lunapi_inst_t::eval_return_data,
 	 "Similar to eval(), but returns all data tables" )
+    
+    .def("proc_lunascope",
+	 [](lunapi_inst_t& self, const std::string& cmd){
+	   py::gil_scoped_release r;
+	   return self.eval_return_data(cmd); // long C++ work, no Python API
+	 },
+	 "Evaluate Luna commands without holding the GIL")
 
     .def("commands",&lunapi_inst_t::commands,
 	 "List commands resulting from a prior eval()" )

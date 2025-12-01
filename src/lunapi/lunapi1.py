@@ -735,6 +735,22 @@ class inst:
       # extract and return result tables
       return tables( r[1] )
 
+   #------------------------------------------------------------------------                       
+
+   def silent_proc_lunascope( self, cmdstr ):
+      """Silently evaluate one or more Luna commands (for internal use)"""
+      
+      _proj = proj(False)
+      silence_mode = _proj.is_silenced()
+      _proj.silence(True,False)
+      
+      r = self.edf.proc_lunascope( cmdstr )
+
+      _proj.silence( silence_mode , False )
+
+      # extract and return result tables
+      return tables( r[1] )
+
    #------------------------------------------------------------------------   
    def empty_result_set( self ):
       return len( self.edf.strata()  ) == 0
@@ -1702,7 +1718,7 @@ class segsrv:
       return self.segsrv.get_scaled_signal( ch , n1 )
 
    def get_scaled_y(self, ch, y):
-      return self.segsrv.get_scaled_y0( ch , y)
+      return self.segsrv.get_scaled_y( ch , y)
 
    def fix_physical_scale(self,ch,lwr,upr):
       self.segsrv.fix_physical_scale( ch, lwr, upr )

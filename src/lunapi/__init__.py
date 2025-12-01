@@ -10,6 +10,6 @@ __lunapi1__ is a a higher-level wrapper around lunapi0-level
 
 """
 
-__version__ = "1.3.9"
+__version__ = "1.4.0"
 
 from lunapi.lunapi1 import *
