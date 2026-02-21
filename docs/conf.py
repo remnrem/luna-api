@@ -15,7 +15,36 @@ extensions = [
 
 autosummary_generate = True
 autodoc_member_order = "bysource"
-autodoc_mock_imports = ["lunapi.lunapi0"]
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "show-inheritance": True,
+}
+autodoc_mock_imports = [
+    # native extension
+    "lunapi.lunapi0",
+    # heavy/runtime deps not needed to render API docs
+    "pandas",
+    "numpy",
+    "scipy",
+    "scipy.stats",
+    "scipy.stats.mstats",
+    "scipy.signal",
+    "matplotlib",
+    "matplotlib.pyplot",
+    "matplotlib.cm",
+    "plotly",
+    "plotly.graph_objects",
+    "plotly.express",
+    "ipywidgets",
+    "IPython",
+    "IPython.core",
+    "IPython.core.display",
+    "IPython.display",
+    "requests",
+    "tqdm",
+    "tqdm.auto",
+]
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
