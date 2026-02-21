@@ -1,10 +1,11 @@
-import os
 import sys
+from pathlib import Path
 
 project = "lunapi"
 author = "lunapi maintainers"
 
-sys.path.insert(0, os.path.abspath("../src"))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
 extensions = [
     "sphinx.ext.autodoc",
