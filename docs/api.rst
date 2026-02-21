@@ -1,48 +1,40 @@
 API Reference
 =============
 
-Top-level Package
------------------
+Use this page as the top-level map to the generated API docs.
 
-.. automodule:: lunapi
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Core API
+--------
 
-Modules
--------
+.. toctree::
+   :maxdepth: 2
 
-.. automodule:: lunapi.project
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   autoapi/lunapi/index
+   autoapi/lunapi/project/index
+   autoapi/lunapi/instance/index
+   autoapi/lunapi/resources/index
 
-.. automodule:: lunapi.instance
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Results and Metadata
+--------------------
 
-.. automodule:: lunapi.results
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
 
-.. automodule:: lunapi.segsrv
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   autoapi/lunapi/results/index
 
-.. automodule:: lunapi.viz
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Signal Service and Visualization
+--------------------------------
 
-.. automodule:: lunapi.moonbeam
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
 
-.. automodule:: lunapi.resources
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   autoapi/lunapi/segsrv/index
+   autoapi/lunapi/viz/index
+
+Data Access
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   autoapi/lunapi/moonbeam/index
