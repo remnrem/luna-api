@@ -6,6 +6,8 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      DEPENDS_CACHE_DIR: ${{ github.workspace }}/depends-cache/${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,6 +32,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel twine
 
+      - name: Restore native dependency cache
+        id: native_deps_cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DEPENDS_CACHE_DIR }}
+          key: native-deps-${{ matrix.os }}-${{ hashFiles('build-linux.sh', 'build-macos.sh', 'CMakeLists.txt.GITHUB', 'CMakeLists.txt.MAC_x86', 'pyproject.toml') }}
+          restore-keys: |
+            native-deps-${{ matrix.os }}-
+
+      - name: Native dependency cache summary
+        run: |
+          echo "Native deps cache hit: ${{ steps.native_deps_cache.outputs.cache-hit }}"
+          if [[ "${{ steps.native_deps_cache.outputs.cache-hit }}" == "true" ]]; then
+            echo "Reusing cached LightGBM/FFTW/Luna artifacts from ${DEPENDS_CACHE_DIR}"
+          else
+            echo "Cache miss: dependencies will be rebuilt and cached"
+          fi
+
       # Set per-runner macOS targets
       - name: Set deployment target (macOS)
         if: startsWith(matrix.os, 'macos-')
@@ -53,8 +73,8 @@ jobs:
           CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
           CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja"
 
-          CIBW_BEFORE_ALL_LINUX: "sh build-linux.sh"
-          CIBW_BEFORE_ALL_MACOS: "sh build-macos.sh"
+          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} sh build-linux.sh"
+          CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} sh build-macos.sh"
           CIBW_BEFORE_ALL_WINDOWS: " "
 
           # Ensure delocate uses the same archs; tag will match MACOSX_DEPLOYMENT_TARGET
