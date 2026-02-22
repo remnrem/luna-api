@@ -1,6 +1,17 @@
 name: Build and Publish
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: "Native dependency build mode"
+        required: true
+        default: "lunapi"
+        type: choice
+        options:
+          - lunapi
+          - luna
+          - all
 
 jobs:
   build_wheels:
@@ -17,17 +28,17 @@ jobs:
       # - all: rebuild FFTW + LightGBM + libluna, then build lunapi
       # - luna: reuse cached FFTW/LightGBM, rebuild libluna, then build lunapi
       # - lunapi: reuse cached FFTW/LightGBM/libluna, build lunapi only
-      NATIVE_DEPS_MODE: lunapi
+      NATIVE_DEPS_MODE: ${{ inputs.build_mode }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # - os: ubuntu-latest
-          #   job_name: "Ubuntu AMD64 Build"
+          - os: ubuntu-latest
+            job_name: "Ubuntu AMD64 Build"
           - os: macos-15
             job_name: "MacOS 15 ARM64 Build"
-          # - os: macos-15-intel
-          #   job_name: "MacOS 15 x86_64 Build"
+          - os: macos-15-intel
+            job_name: "MacOS 15 x86_64 Build"
 
     steps:
       - uses: actions/checkout@v4
@@ -87,7 +98,7 @@ jobs:
           CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
           CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }}"
 
-          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} sh build-linux.sh"
+          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }} sh build-linux.sh"
           CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }} sh build-macos.sh"
           CIBW_BEFORE_ALL_WINDOWS: " "
 
