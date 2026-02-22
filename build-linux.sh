@@ -61,17 +61,20 @@ restore_lgbm() {
   mkdir -p "${DEPS_DIR}/LightGBM"
   cp "${LGBM_LIB}" "${DEPS_DIR}/LightGBM/lib_lightgbm.a"
   local include_src=""
+  local include_dst="${DEPS_DIR}/LightGBM/include"
   if [[ -d "${LGBM_INCLUDE_CACHE}" ]]; then
     include_src="${LGBM_INCLUDE_CACHE}"
-  elif [[ -d "${DEPS_DIR}/LightGBM/include" ]]; then
+  elif [[ -d "${include_dst}" ]]; then
     # all-mode may have just built LightGBM before cache payload exists
-    include_src="${DEPS_DIR}/LightGBM/include"
+    include_src="${include_dst}"
   else
     echo "Missing LightGBM include payload in both cache and local build tree"
     return 1
   fi
-  rm -rf "${DEPS_DIR}/LightGBM/include"
-  cp -R "${include_src}" "${DEPS_DIR}/LightGBM/include"
+  if [[ "${include_src}" != "${include_dst}" ]]; then
+    rm -rf "${include_dst}"
+    cp -R "${include_src}" "${include_dst}"
+  fi
 }
 
 restore_luna() {
