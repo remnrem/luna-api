@@ -12,12 +12,24 @@ mkdir -p "${DEPS_DIR}" "${CACHE_DIR}"
 FFTW_LIB="${CACHE_DIR}/libfftw3.a"
 LGBM_LIB="${CACHE_DIR}/lib_lightgbm.a"
 LUNA_LIB="${CACHE_DIR}/libluna.a"
+LGBM_INCLUDE_CACHE="${CACHE_DIR}/LightGBM-include"
+LUNA_BASE_CACHE="${CACHE_DIR}/luna-base"
+DEPS_INCLUDE_CACHE="${CACHE_DIR}/include"
 
-if [[ -f "${FFTW_LIB}" && -f "${LGBM_LIB}" && -f "${LUNA_LIB}" ]]; then
+if [[ -f "${FFTW_LIB}" && -f "${LGBM_LIB}" && -f "${LUNA_LIB}" && -d "${LGBM_INCLUDE_CACHE}" && -d "${LUNA_BASE_CACHE}" ]]; then
   echo "Using cached native dependencies from ${CACHE_DIR}"
   cp "${FFTW_LIB}" "${DEPS_DIR}/"
   cp "${LGBM_LIB}" "${DEPS_DIR}/"
   cp "${LUNA_LIB}" "${DEPS_DIR}/"
+  mkdir -p "${DEPS_DIR}/LightGBM"
+  rm -rf "${DEPS_DIR}/LightGBM/include"
+  cp -R "${LGBM_INCLUDE_CACHE}" "${DEPS_DIR}/LightGBM/include"
+  rm -rf "${DEPS_DIR}/luna-base"
+  cp -R "${LUNA_BASE_CACHE}" "${DEPS_DIR}/luna-base"
+  if [[ -d "${DEPS_INCLUDE_CACHE}" ]]; then
+    rm -rf "${DEPS_DIR}/include"
+    cp -R "${DEPS_INCLUDE_CACHE}" "${DEPS_DIR}/include"
+  fi
   echo "CACHE_DIR=${CACHE_DIR}"
   ls -la "${CACHE_DIR}"
   ls -l "${DEPS_DIR}"
@@ -72,6 +84,13 @@ cd luna-base
 make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/
 cp libluna.a "${DEPS_DIR}/"
 cp libluna.a "${LUNA_LIB}"
+
+rm -rf "${LGBM_INCLUDE_CACHE}" "${LUNA_BASE_CACHE}" "${DEPS_INCLUDE_CACHE}"
+cp -R "${DEPS_DIR}/LightGBM/include" "${LGBM_INCLUDE_CACHE}"
+cp -R "${DEPS_DIR}/luna-base" "${LUNA_BASE_CACHE}"
+if [[ -d "${DEPS_DIR}/include" ]]; then
+  cp -R "${DEPS_DIR}/include" "${DEPS_INCLUDE_CACHE}"
+fi
 
 echo "CACHE_DIR=${CACHE_DIR}"
 ls -la "${CACHE_DIR}"

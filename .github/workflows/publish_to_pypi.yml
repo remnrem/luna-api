@@ -8,6 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       DEPENDS_CACHE_DIR: ${{ github.workspace }}/depends-cache/${{ matrix.os }}
+      NATIVE_DEPS_CACHE_VERSION: v2
       # Important usage note:
       # 1. Run once with NATIVE_DEPS_MODE: all to seed full cache payload for the new structure.
       # 2. Then switch to NATIVE_DEPS_MODE: lunapi for fast runs.
@@ -16,7 +17,7 @@ jobs:
       # - all: rebuild FFTW + LightGBM + libluna, then build lunapi
       # - luna: reuse cached FFTW/LightGBM, rebuild libluna, then build lunapi
       # - lunapi: reuse cached FFTW/LightGBM/libluna, build lunapi only
-      NATIVE_DEPS_MODE: lunapi
+      NATIVE_DEPS_MODE: all
     strategy:
       fail-fast: false
       matrix:
@@ -49,9 +50,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ env.DEPENDS_CACHE_DIR }}
-          key: native-deps-${{ matrix.os }}-${{ hashFiles('build-linux.sh', 'build-macos.sh', 'CMakeLists.txt.GITHUB', 'CMakeLists.txt.MAC_x86', 'pyproject.toml') }}
+          key: native-deps-${{ env.NATIVE_DEPS_CACHE_VERSION }}-${{ matrix.os }}-${{ hashFiles('build-linux.sh', 'build-macos.sh', 'CMakeLists.txt.GITHUB', 'CMakeLists.txt.MAC_x86', 'pyproject.toml') }}
           restore-keys: |
-            native-deps-${{ matrix.os }}-
+            native-deps-${{ env.NATIVE_DEPS_CACHE_VERSION }}-${{ matrix.os }}-
 
       - name: Native dependency cache summary
         run: |
@@ -127,7 +128,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ${{ env.DEPENDS_CACHE_DIR }}
-          key: native-deps-${{ matrix.os }}-${{ hashFiles('build-linux.sh', 'build-macos.sh', 'CMakeLists.txt.GITHUB', 'CMakeLists.txt.MAC_x86', 'pyproject.toml') }}
+          key: native-deps-${{ env.NATIVE_DEPS_CACHE_VERSION }}-${{ matrix.os }}-${{ hashFiles('build-linux.sh', 'build-macos.sh', 'CMakeLists.txt.GITHUB', 'CMakeLists.txt.MAC_x86', 'pyproject.toml') }}
 
       - name: Publish to PyPI
         run: twine upload wheelhouse/*.whl --verbose --skip-existing
