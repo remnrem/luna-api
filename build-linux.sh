@@ -7,8 +7,14 @@ ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 DEPS_DIR="${ROOT}/depends"
 CACHE_DIR="${DEPENDS_CACHE_DIR:-${ROOT}/depends-cache/linux}"
 MODE="${NATIVE_DEPS_MODE:-lunapi}"
+QUIET="${NATIVE_DEPS_QUIET:-1}"
+BUILD_LOG="${ROOT}/native-deps-build.log"
 
 mkdir -p "${DEPS_DIR}" "${CACHE_DIR}"
+: > "${BUILD_LOG}"
+if [[ "${QUIET}" == "1" ]]; then
+  trap 'echo "native deps build failed; tail of ${BUILD_LOG}:"; tail -n 200 "${BUILD_LOG}" || true' ERR
+fi
 
 FFTW_LIB="${CACHE_DIR}/libfftw3.a"
 FFTW_HDR="${CACHE_DIR}/fftw3.h"
@@ -54,8 +60,18 @@ restore_lgbm() {
   cp "${LGBM_LIB}" "${DEPS_DIR}/lib_lightgbm.a"
   mkdir -p "${DEPS_DIR}/LightGBM"
   cp "${LGBM_LIB}" "${DEPS_DIR}/LightGBM/lib_lightgbm.a"
+  local include_src=""
+  if [[ -d "${LGBM_INCLUDE_CACHE}" ]]; then
+    include_src="${LGBM_INCLUDE_CACHE}"
+  elif [[ -d "${DEPS_DIR}/LightGBM/include" ]]; then
+    # all-mode may have just built LightGBM before cache payload exists
+    include_src="${DEPS_DIR}/LightGBM/include"
+  else
+    echo "Missing LightGBM include payload in both cache and local build tree"
+    return 1
+  fi
   rm -rf "${DEPS_DIR}/LightGBM/include"
-  cp -R "${LGBM_INCLUDE_CACHE}" "${DEPS_DIR}/LightGBM/include"
+  cp -R "${include_src}" "${DEPS_DIR}/LightGBM/include"
 }
 
 restore_luna() {
@@ -120,41 +136,77 @@ if [[ "${MODE}" == "all" ]]; then
 fi
 
 if [[ "${MODE}" == "all" ]]; then
-  yum check-update || true
-  yum install -y curl
+  if [[ "${QUIET}" == "1" ]]; then
+    yum check-update >> "${BUILD_LOG}" 2>&1 || true
+    yum install -y curl >> "${BUILD_LOG}" 2>&1
+  else
+    yum check-update || true
+    yum install -y curl
+  fi
 
   # CMAKE
   cd "${ROOT}"
-  curl -O https://cmake.org/files/v3.31/cmake-3.31.0.tar.gz
-  tar -xzvf cmake-3.31.0.tar.gz
+  if [[ "${QUIET}" == "1" ]]; then
+    curl -sSLo cmake-3.31.0.tar.gz https://cmake.org/files/v3.31/cmake-3.31.0.tar.gz >> "${BUILD_LOG}" 2>&1
+    tar -xzf cmake-3.31.0.tar.gz >> "${BUILD_LOG}" 2>&1
+  else
+    curl -O https://cmake.org/files/v3.31/cmake-3.31.0.tar.gz
+    tar -xzvf cmake-3.31.0.tar.gz
+  fi
   cd cmake-3.31.0
-  ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
-  make -j2
-  make install
+  if [[ "${QUIET}" == "1" ]]; then
+    ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF >> "${BUILD_LOG}" 2>&1
+    make -j2 >> "${BUILD_LOG}" 2>&1
+    make install >> "${BUILD_LOG}" 2>&1
+  else
+    ./bootstrap -- -DCMAKE_USE_OPENSSL=OFF
+    make -j2
+    make install
+  fi
   cmake --version
 
   # LightGBM
   cd "${DEPS_DIR}"
   rm -rf LightGBM
-  git clone --recursive https://github.com/microsoft/LightGBM
+  if [[ "${QUIET}" == "1" ]]; then
+    git clone --recursive https://github.com/microsoft/LightGBM >> "${BUILD_LOG}" 2>&1
+  else
+    git clone --recursive https://github.com/microsoft/LightGBM
+  fi
   cd LightGBM
   mkdir -p build
   cd build
-  cmake -DBUILD_STATIC_LIB=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF ..
-  make -j4
+  if [[ "${QUIET}" == "1" ]]; then
+    cmake -DBUILD_STATIC_LIB=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF .. >> "${BUILD_LOG}" 2>&1
+    make -j4 >> "${BUILD_LOG}" 2>&1
+  else
+    cmake -DBUILD_STATIC_LIB=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF ..
+    make -j4
+  fi
   cd ..
   cp lib_lightgbm.a "${LGBM_LIB}"
 
   # FFTW
   cd "${DEPS_DIR}"
   rm -rf fftw-3.3.10 fftw-3.3.10.tar.gz
-  curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
-  tar -xzvf fftw-3.3.10.tar.gz
+  if [[ "${QUIET}" == "1" ]]; then
+    curl -sSLo fftw-3.3.10.tar.gz https://www.fftw.org/fftw-3.3.10.tar.gz >> "${BUILD_LOG}" 2>&1
+    tar -xzf fftw-3.3.10.tar.gz >> "${BUILD_LOG}" 2>&1
+  else
+    curl -O https://www.fftw.org/fftw-3.3.10.tar.gz
+    tar -xzvf fftw-3.3.10.tar.gz
+  fi
   cd fftw-3.3.10
-  ./configure --with-pic
-  make -j4 CFLAGS=-fPIC
-  make install
-  ls -l .libs/
+  if [[ "${QUIET}" == "1" ]]; then
+    ./configure --with-pic >> "${BUILD_LOG}" 2>&1
+    make -j4 CFLAGS=-fPIC >> "${BUILD_LOG}" 2>&1
+    make install >> "${BUILD_LOG}" 2>&1
+  else
+    ./configure --with-pic
+    make -j4 CFLAGS=-fPIC
+    make install
+    ls -l .libs/
+  fi
   cp .libs/libfftw3.a "${FFTW_LIB}"
   cp api/fftw3.h "${FFTW_HDR}"
 
@@ -165,9 +217,21 @@ fi
 # luna-base (built in all/luna modes)
 cd "${DEPS_DIR}"
 rm -rf luna-base
-git clone https://github.com/remnrem/luna-base.git
+if [[ "${QUIET}" == "1" ]]; then
+  git clone https://github.com/remnrem/luna-base.git >> "${BUILD_LOG}" 2>&1
+else
+  git clone https://github.com/remnrem/luna-base.git
+fi
 cd luna-base
-make -j4 LGBM=1 LGBM_PATH=../LightGBM/
+if [[ "${QUIET}" == "1" ]]; then
+  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ >> "${BUILD_LOG}" 2>&1 || {
+    echo "luna-base build failed; tail of ${BUILD_LOG}:"
+    tail -n 200 "${BUILD_LOG}" || true
+    exit 1
+  }
+else
+  make -j4 LGBM=1 LGBM_PATH=../LightGBM/
+fi
 cp libluna.a "${LUNA_LIB}"
 
 restore_luna
