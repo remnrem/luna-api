@@ -53,6 +53,7 @@ restore_fftw() {
 restore_lgbm() {
   sudo cp "${LGBM_LIB}" /usr/local/lib/
   mkdir -p "${DEPS_DIR}/LightGBM"
+  cp "${LGBM_LIB}" "${DEPS_DIR}/LightGBM/lib_lightgbm.a"
   rm -rf "${DEPS_DIR}/LightGBM/include"
   cp -R "${LGBM_INCLUDE_CACHE}" "${DEPS_DIR}/LightGBM/include"
 }
