@@ -17,7 +17,7 @@ jobs:
       # - all: rebuild FFTW + LightGBM + libluna, then build lunapi
       # - luna: reuse cached FFTW/LightGBM, rebuild libluna, then build lunapi
       # - lunapi: reuse cached FFTW/LightGBM/libluna, build lunapi only
-      NATIVE_DEPS_MODE: all
+      NATIVE_DEPS_MODE: lunapi
     strategy:
       fail-fast: false
       matrix:
