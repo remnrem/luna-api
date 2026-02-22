@@ -12,12 +12,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            job_name: "Ubuntu AMD64 Build"
+          # - os: ubuntu-latest
+          #   job_name: "Ubuntu AMD64 Build"
           - os: macos-15
             job_name: "MacOS 15 ARM64 Build"
-          - os: macos-15-intel
-            job_name: "MacOS 15 x86_64 Build"
+          # - os: macos-15-intel
+          #   job_name: "MacOS 15 x86_64 Build"
 
     steps:
       - uses: actions/checkout@v4
@@ -100,8 +100,20 @@ jobs:
           echo "DEPENDS_CACHE_DIR=${DEPENDS_CACHE_DIR}"
           ls -la "${DEPENDS_CACHE_DIR}" || true
 
+      - name: Check native cache payload
+        if: always()
+        id: native_cache_payload
+        run: |
+          if find "${DEPENDS_CACHE_DIR}" -mindepth 1 -print -quit | grep -q .; then
+            echo "has_files=true" >> "$GITHUB_OUTPUT"
+            echo "Native cache payload present"
+          else
+            echo "has_files=false" >> "$GITHUB_OUTPUT"
+            echo "Native cache payload missing (directory is empty)"
+          fi
+
       - name: Save native dependency cache
-        if: always() && steps.native_deps_cache.outputs.cache-hit != 'true' && hashFiles(format('depends-cache/{0}/*', matrix.os)) != ''
+        if: always() && steps.native_deps_cache.outputs.cache-hit != 'true' && steps.native_cache_payload.outputs.has_files == 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.DEPENDS_CACHE_DIR }}
