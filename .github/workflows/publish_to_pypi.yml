@@ -75,6 +75,20 @@ jobs:
             echo "Cache miss: dependencies will be rebuilt and cached"
           fi
 
+      - name: Resolve effective native mode
+        id: native_mode
+        run: |
+          requested="${NATIVE_DEPS_MODE}"
+          hit="${{ steps.native_deps_cache.outputs.cache-hit }}"
+          effective="${requested}"
+          if [[ "${hit}" != "true" && "${requested}" != "all" ]]; then
+            effective="all"
+            echo "Cache miss with requested mode '${requested}'; falling back to '${effective}' for this runner"
+          fi
+          echo "requested=${requested}" >> "$GITHUB_OUTPUT"
+          echo "effective=${effective}" >> "$GITHUB_OUTPUT"
+          echo "Using native deps mode: ${effective}"
+
       # Set per-runner macOS targets
       - name: Set deployment target (macOS)
         if: startsWith(matrix.os, 'macos-')
@@ -96,10 +110,10 @@ jobs:
 
           # Avoid slow ninja build-from-source
           CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
-          CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }}"
+          CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }}"
 
-          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }} sh build-linux.sh"
-          CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }} sh build-macos.sh"
+          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }} sh build-linux.sh"
+          CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }} sh build-macos.sh"
           CIBW_BEFORE_ALL_WINDOWS: " "
 
           # Ensure delocate uses the same archs; tag will match MACOSX_DEPLOYMENT_TARGET
