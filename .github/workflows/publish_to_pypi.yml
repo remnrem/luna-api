@@ -8,6 +8,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       DEPENDS_CACHE_DIR: ${{ github.workspace }}/depends-cache/${{ matrix.os }}
+      # Important usage note:
+      # 1. Run once with NATIVE_DEPS_MODE: all to seed full cache payload for the new structure.
+      # 2. Then switch to NATIVE_DEPS_MODE: lunapi for fast runs.
+      # 3. Use NATIVE_DEPS_MODE: luna when only libluna.a needs rebuilding.
+      # Native build mode:
+      # - all: rebuild FFTW + LightGBM + libluna, then build lunapi
+      # - luna: reuse cached FFTW/LightGBM, rebuild libluna, then build lunapi
+      # - lunapi: reuse cached FFTW/LightGBM/libluna, build lunapi only
+      NATIVE_DEPS_MODE: lunapi
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +55,7 @@ jobs:
 
       - name: Native dependency cache summary
         run: |
+          echo "Native deps mode: ${NATIVE_DEPS_MODE}"
           echo "Native deps cache hit: ${{ steps.native_deps_cache.outputs.cache-hit }}"
           if [[ "${{ steps.native_deps_cache.outputs.cache-hit }}" == "true" ]]; then
             echo "Reusing cached LightGBM/FFTW/Luna artifacts from ${DEPENDS_CACHE_DIR}"
@@ -74,10 +84,10 @@ jobs:
 
           # Avoid slow ninja build-from-source
           CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
-          CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }}"
+          CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }}"
 
           CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} sh build-linux.sh"
-          CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} sh build-macos.sh"
+          CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ env.NATIVE_DEPS_MODE }} sh build-macos.sh"
           CIBW_BEFORE_ALL_WINDOWS: " "
 
           # Ensure delocate uses the same archs; tag will match MACOSX_DEPLOYMENT_TARGET
