@@ -13,26 +13,33 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/fftw-3.3.10/include/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/include/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/luna-base/stats/" )
-include_directories("$ENV{GITHUB_WORKSPACE}/depends/LightGBM/include/")
+# In cibuildwheel Linux containers, GITHUB_WORKSPACE may be unset.
+# Fall back to source-local depends/ populated by build-linux.sh.
+set(LUNAPI_DEPENDS_DIR "$ENV{GITHUB_WORKSPACE}/depends")
+if("$ENV{GITHUB_WORKSPACE}" STREQUAL "" OR NOT EXISTS "${LUNAPI_DEPENDS_DIR}")
+  set(LUNAPI_DEPENDS_DIR "${CMAKE_SOURCE_DIR}/depends")
+endif()
+
+include_directories("${LUNAPI_DEPENDS_DIR}/fftw-3.3.10" )
+include_directories("${LUNAPI_DEPENDS_DIR}/fftw-3.3.10/include/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/include/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/luna-base/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/luna-base/stats/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/LightGBM/include/")
 include_directories("/usr/local/include/")
 include_directories("/usr/local/include/eigen3")
 include_directories("/opt/homebrew/include/eigen3")
 
-link_directories("$ENV{GITHUB_WORKSPACE}/depends/")
+link_directories("${LUNAPI_DEPENDS_DIR}/")
 link_directories("/usr/local/lib/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
 
-set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libluna.a" )
-set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/lib_lightgbm.a" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "$ENV{GITHUB_WORKSPACE}/depends/libfftw3.a" )
+set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${LUNAPI_DEPENDS_DIR}/libluna.a" )
+set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "${LUNAPI_DEPENDS_DIR}/lib_lightgbm.a" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${LUNAPI_DEPENDS_DIR}/libfftw3.a" )
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 

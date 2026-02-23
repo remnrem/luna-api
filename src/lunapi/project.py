@@ -204,8 +204,11 @@ class proj:
          sn = self.get_n(n)
          if type(sn) is int: n = sn
          
+      # Lazy import avoids project<->instance import cycle at module import time.
+      from .instance import inst as _inst
+
       # return based on n (from sample-list) or string/empty (new instance)
-      return inst(proj.eng.inst( n ))
+      return _inst(proj.eng.inst( n ))
       
 
    #------------------------------------------------------------------------
@@ -237,8 +240,11 @@ class proj:
          print( "expecting rs (record duration, secs) to be a positive integer" )
          return
       
+      # Lazy import avoids project<->instance import cycle at module import time.
+      from .instance import inst as _inst
+
       # return instance of fixed size
-      return inst(proj.eng.empty_inst(id, nr, rs, startdate, starttime ))
+      return _inst(proj.eng.empty_inst(id, nr, rs, startdate, starttime ))
 
    #------------------------------------------------------------------------
 
@@ -708,7 +714,7 @@ class proj:
 
       if path is None: path = resources.POPS_PATH
       if lib is None: lib = resources.POPS_LIB
-      
+
       import os
       if not os.path.isdir( path ):         
          return 'could not open POPS resource path ' + path 
@@ -720,6 +726,20 @@ class proj:
       if ( s1 is None ) != ( s2 is None ):
          print( 'must set s or s1 and s2 to EEGs' )
          return
+
+      # POPS templates may reference mastoid vars even when do_reref is false.
+      # Provide safe placeholders unless rereferencing is explicitly requested.
+      if do_reref:
+         if s is not None and m is None:
+            print( 'must set m when do_reref is True in single-channel mode' )
+            return
+         if s1 is not None and ( m1 is None or m2 is None ):
+            print( 'must set m1 and m2 when do_reref is True in two-channel mode' )
+            return
+      else:
+         if m is None: m = '.'
+         if m1 is None: m1 = '.'
+         if m2 is None: m2 = '.'
          
       # set options
       self.var( 'mpath' , path )

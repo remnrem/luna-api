@@ -182,7 +182,10 @@ def cmdfile( f ):
               Result value produced by the Luna backend wrapper.
    """
 
-   return _luna.cmdfile( f )
+   # Preserve original line structure so IF/FI blocks are parsed as separate
+   # Luna commands (some workflows rely on multiline control statements).
+   with open(f, "r", encoding="utf-8") as fh:
+      return fh.read()
 
 
 # --------------------------------------------------------------------------------
@@ -200,16 +203,11 @@ def strata( ts ):
       object
               See function description for the concrete return type.
    """
-   r = [ ] 
+   r = [ ]
    for cmd in ts:
-      strata = ts[cmd].keys()
-      for stratum in strata:
-         r.append( ( cmd , strata ) )
-      return r
-
-   t = pd.DataFrame( self.edf.strata() )
-   t.columns = ["Command","Strata"]
-   return t
+      for stratum in ts[cmd].keys():
+         r.append( ( cmd , stratum ) )
+   return r
 
 # --------------------------------------------------------------------------------
 
