@@ -69,7 +69,8 @@ jobs:
         run: |
           echo "Native deps mode: ${NATIVE_DEPS_MODE}"
           echo "Native deps cache hit: ${{ steps.native_deps_cache.outputs.cache-hit }}"
-          if [[ "${{ steps.native_deps_cache.outputs.cache-hit }}" == "true" ]]; then
+          echo "Native deps matched key: ${{ steps.native_deps_cache.outputs.cache-matched-key }}"
+          if [[ "${{ steps.native_deps_cache.outputs.cache-hit }}" == "true" || -n "${{ steps.native_deps_cache.outputs.cache-matched-key }}" ]]; then
             echo "Reusing cached LightGBM/FFTW/Luna artifacts from ${DEPENDS_CACHE_DIR}"
           else
             echo "Cache miss: dependencies will be rebuilt and cached"
@@ -80,8 +81,13 @@ jobs:
         run: |
           requested="${NATIVE_DEPS_MODE}"
           hit="${{ steps.native_deps_cache.outputs.cache-hit }}"
+          matched_key="${{ steps.native_deps_cache.outputs.cache-matched-key }}"
+          has_cache="false"
+          if [[ "${hit}" == "true" || -n "${matched_key}" ]]; then
+            has_cache="true"
+          fi
           effective="${requested}"
-          if [[ "${hit}" != "true" && "${requested}" != "all" ]]; then
+          if [[ "${has_cache}" != "true" && "${requested}" != "all" ]]; then
             effective="all"
             echo "Cache miss with requested mode '${requested}'; falling back to '${effective}' for this runner"
           fi
