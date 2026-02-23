@@ -152,12 +152,31 @@ if [[ "${MODE}" == "all" ]]; then
 fi
 
 if [[ "${MODE}" == "all" ]]; then
-  if [[ "${QUIET}" == "1" ]]; then
-    yum check-update >> "${BUILD_LOG}" 2>&1 || true
-    yum install -y curl >> "${BUILD_LOG}" 2>&1
-  else
-    yum check-update || true
-    yum install -y curl
+  if ! command -v curl >/dev/null 2>&1; then
+    if command -v yum >/dev/null 2>&1; then
+      if [[ "${QUIET}" == "1" ]]; then
+        yum check-update >> "${BUILD_LOG}" 2>&1 || true
+        yum install -y curl >> "${BUILD_LOG}" 2>&1
+      else
+        yum check-update || true
+        yum install -y curl
+      fi
+    elif command -v dnf >/dev/null 2>&1; then
+      if [[ "${QUIET}" == "1" ]]; then
+        dnf -y install curl >> "${BUILD_LOG}" 2>&1
+      else
+        dnf -y install curl
+      fi
+    elif command -v apk >/dev/null 2>&1; then
+      if [[ "${QUIET}" == "1" ]]; then
+        apk add --no-cache curl >> "${BUILD_LOG}" 2>&1
+      else
+        apk add --no-cache curl
+      fi
+    else
+      echo "No supported package manager found to install curl"
+      exit 1
+    fi
   fi
 
   # CMAKE
