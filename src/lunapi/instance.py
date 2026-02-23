@@ -21,6 +21,7 @@ import os
 from IPython.display import display
 
 from .project import proj
+from .resources import resources
 from .results import tables, cmdfile
 
 
@@ -173,7 +174,10 @@ class inst:
          return
 
       # one/some
-      if type( keys ) is not set: keys = set( keys )
+      if isinstance(keys, str):
+         keys = { keys }
+      elif type( keys ) is not set:
+         keys = set( keys )
       self.edf.clear_selected_ivar( keys )
       
    #------------------------------------------------------------------------
@@ -1005,7 +1009,7 @@ class inst:
 
       if path is None: path = resources.POPS_PATH
       if lib is None: lib = resources.POPS_LIB
-      
+
       import os
       if not os.path.isdir( path ):         
          return 'could not open POPS resource path ' + path 
@@ -1017,6 +1021,20 @@ class inst:
       if ( s1 is None ) != ( s2 is None ):
          print( 'must set s or s1 and s2 to EEGs' )
          return
+
+      # POPS templates may reference mastoid vars even when do_reref is false.
+      # Provide safe placeholders unless rereferencing is explicitly requested.
+      if do_reref:
+         if s is not None and m is None:
+            print( 'must set m when do_reref is True in single-channel mode' )
+            return
+         if s1 is not None and ( m1 is None or m2 is None ):
+            print( 'must set m1 and m2 when do_reref is True in two-channel mode' )
+            return
+      else:
+         if m is None: m = '.'
+         if m1 is None: m1 = '.'
+         if m2 is None: m2 = '.'
          
       # set options
       self.var( 'mpath' , path )
@@ -1028,11 +1046,22 @@ class inst:
       self.var( 'LON' , lights_on )
 
       if s is not None: self.var( 's' , s )
+      else: self.clear_vars( 's' )
+
       if m is not None: self.var( 'm' , m )
+      else: self.clear_vars( 'm' )
+
       if s1 is not None: self.var( 's1' , s1 )
+      else: self.clear_vars( 's1' )
+
       if s2 is not None: self.var( 's2' , s2 )
+      else: self.clear_vars( 's2' )
+
       if m1 is not None: self.var( 'm1' , m1 )
+      else: self.clear_vars( 'm1' )
+
       if m2 is not None: self.var( 'm2' , m2 )
+      else: self.clear_vars( 'm2' )
       
       # get either one- or two-channel mode Luna script from POPS folder
       twoch = s1 is not None and s2 is not None;
