@@ -227,13 +227,13 @@ else
 fi
 cd luna-base
 if [[ "${QUIET}" == "1" ]]; then
-  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ >> "${BUILD_LOG}" 2>&1 || {
+  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ CXXFLAGS="-pthread" LDFLAGS="-pthread" >> "${BUILD_LOG}" 2>&1 || {
     echo "luna-base build failed; tail of ${BUILD_LOG}:"
     tail -n 200 "${BUILD_LOG}" || true
     exit 1
   }
 else
-  make -j4 LGBM=1 LGBM_PATH=../LightGBM/
+  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ CXXFLAGS="-pthread" LDFLAGS="-pthread"
 fi
 cp libluna.a "${LUNA_LIB}"
 
