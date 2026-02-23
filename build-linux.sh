@@ -79,8 +79,21 @@ restore_lgbm() {
 
 restore_luna() {
   cp "${LUNA_LIB}" "${DEPS_DIR}/libluna.a"
-  rm -rf "${DEPS_DIR}/luna-base"
-  cp -R "${LUNA_BASE_CACHE}" "${DEPS_DIR}/luna-base"
+  local luna_src=""
+  local luna_dst="${DEPS_DIR}/luna-base"
+  if [[ -d "${LUNA_BASE_CACHE}" ]]; then
+    luna_src="${LUNA_BASE_CACHE}"
+  elif [[ -d "${luna_dst}" ]]; then
+    # all-mode may have just built luna-base before cache payload exists
+    luna_src="${luna_dst}"
+  else
+    echo "Missing luna-base payload in both cache and local build tree"
+    return 1
+  fi
+  if [[ "${luna_src}" != "${luna_dst}" ]]; then
+    rm -rf "${luna_dst}"
+    cp -R "${luna_src}" "${luna_dst}"
+  fi
 }
 
 restore_optional_dep_include() {
