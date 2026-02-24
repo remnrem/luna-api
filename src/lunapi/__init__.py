@@ -12,6 +12,7 @@ lunapi.lunapi1
     visualization helpers.
 """
 
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 
 from lunapi.lunapi1 import *
+from scipy.stats.mstats import winsorize
