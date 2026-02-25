@@ -61,6 +61,10 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  dsp/lat.cpp \
 			  dsp/linedenoiser.cpp \
 			  dsp/lzw.cpp \
+			  dsp/medflt.cpp \
+			  dsp/ctypes.cpp \
+			  dsp/ipc.cpp \
+			  dsp/log-transform.cpp \
 			  dsp/mi.cpp \
 			  dsp/microstates.cpp \
 			  dsp/movavg.cpp \
@@ -207,6 +211,7 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  suds/resoap.cpp \
 			  suds/soap.cpp \
 			  suds/suds.cpp \
+			  timeline/s2c.cpp \
 			  timeline/cache.cpp \
 			  timeline/chep.cpp \
 			  timeline/epoch-annots.cpp \
