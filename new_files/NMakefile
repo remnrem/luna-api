@@ -1,0 +1,325 @@
+# Define the compiler and linker
+CC = cl
+LINK = link
+
+# Define the output names
+LIB_NAME = libluna.lib
+
+# Also build the executable
+EXE_NAME = luna.exe
+
+# Define the include directories
+INCLUDES = /I. /Iedf /Iedfz /Idefs /Itinyxml /Ihelper /Itimeline /Iannot /Idsp /Imiscmath /Iartifacts /Ispectral /Ispectral/mtm /Ispindles /Idynamics /Iintervals /Iresp /Ifftw /Icwt /Istats /Istaging /Isuds /Idb /Iica /Iclocs /Ipdc /Isstore /Idsp/libsamplerate /Ipops /Iassoc /Ilgbm /Imodels /Ilunapi /Istats/catch22 /I..\fftw-3.3.5-dll64 /I..\LightGBM\include /Idirent\include /Iwingetopt/src
+
+# Define the source files
+CPP_SOURCES = annot/align-annots.cpp \
+			  annot/annot-eval.cpp \
+			  annot/annot.cpp \
+			  annot/annotate.cpp \
+			  annot/nsrr-remap.cpp \
+			  artifacts/artifacts.cpp \
+			  artifacts/correct.cpp \
+			  assoc/assoc.cpp \
+			  assoc/massoc-dumper.cpp \
+			  assoc/massoc.cpp \
+			  clocs/clocs.cpp \
+			  clocs/legendre_polynomial.cpp \
+			  clocs/topo.cpp \
+			  cmddefs.cpp \
+			  optdefs.cpp \
+			  cwt/cwt.cpp \
+			  db/db.cpp \
+			  db/retval.cpp \
+			  db/sqlwrap.cpp \
+			  defs/defs.cpp \
+			  dsp/acf.cpp \
+			  dsp/armorf.cpp \
+			  dsp/arousals.cpp \
+			  dsp/cfc.cpp \
+			  dsp/clip.cpp \
+			  dsp/coherence.cpp \
+			  dsp/conncoupl.cpp \
+			  dsp/conv.cpp \
+			  dsp/correl.cpp \
+			  dsp/cwt-design.cpp \
+			  dsp/detrend.cpp \
+			  dsp/dfa.cpp \
+			  dsp/dupes.cpp \
+			  dsp/ecgsuppression.cpp \
+			  dsp/ed.cpp \
+			  dsp/emd.cpp \
+			  dsp/fiplot.cpp \
+			  dsp/fir.cpp \
+			  dsp/freqsampling.cpp \
+			  dsp/gc.cpp \
+			  dsp/ged.cpp \
+			  dsp/gft.cpp \
+			  dsp/hilbert.cpp \
+			  dsp/ica-wrapper.cpp \
+			  dsp/iir.cpp \
+			  dsp/interpolate.cpp \
+			  dsp/lat.cpp \
+			  dsp/linedenoiser.cpp \
+			  dsp/lzw.cpp \
+			  dsp/mi.cpp \
+			  dsp/microstates.cpp \
+			  dsp/movavg.cpp \
+			  dsp/mse.cpp \
+			  dsp/ngaus.cpp \
+			  dsp/pac.cpp \
+			  dsp/pcoupl.cpp \
+			  dsp/peaks.cpp \
+			  dsp/peri.cpp \
+			  dsp/polarity.cpp \
+			  dsp/psc.cpp \
+			  dsp/psi.cpp \
+			  dsp/pwl_interp_2d_scattered.cpp \
+			  dsp/qc.cpp \
+			  dsp/rai.cpp \
+			  dsp/r8lib.cpp \
+			  dsp/rectify.cpp \
+			  dsp/reduce.cpp \
+			  dsp/rems.cpp \
+			  dsp/resample.cpp \
+			  dsp/ripples.cpp \
+			  dsp/scramble.cpp \
+			  dsp/shift.cpp \
+			  dsp/siggen.cpp \
+			  dsp/simul.cpp \
+			  dsp/sl.cpp \
+			  dsp/spectral_norm.cpp \
+			  dsp/ssa.cpp \
+			  dsp/standardize.cpp \
+			  dsp/svd.cpp \
+			  dsp/sync.cpp \
+			  dsp/tclst.cpp \
+			  dsp/tlock.cpp \
+			  dsp/trim.cpp \
+			  dsp/tsync.cpp \
+			  dsp/tv.cpp \
+			  dsp/wrappers.cpp \
+			  dsp/xcorr.cpp \
+			  dsp/zpeaks.cpp \
+			  dynamics/e-cycles.cpp \
+			  dynamics/qdynam.cpp \
+			  edf/align-epochs.cpp \
+			  edf/align.cpp \
+			  edf/canonical.cpp \
+			  edf/chep.cpp \
+			  edf/covar.cpp \
+			  edf/dump-intervals.cpp \
+			  edf/dumper.cpp \
+			  edf/edf-minus.cpp \
+			  edf/edf.cpp \
+			  edf/freezer.cpp \
+			  edf/insert.cpp \
+			  edf/masks.cpp \
+			  edf/merger.cpp \
+			  edf/old-canonical.cpp \
+			  edf/sedf.cpp \
+			  edf/slice.cpp \
+			  edf/slist.cpp \
+			  edf/tal.cpp \
+			  edf/trans.cpp \
+			  edfz/bgzf.cpp \
+			  edfz/edfz.cpp \
+			  edfz/edfz2.cpp \
+			  eval.cpp \
+			  fftw/bandaid.cpp \
+			  fftw/cohfft.cpp \
+			  fftw/fftwrap.cpp \
+			  globals.cpp \
+			  param.cpp \
+			  dummy.cpp \
+			  helper/helper.cpp \
+			  helper/mapper.cpp \
+			  helper/token-eval.cpp \
+			  helper/token.cpp \
+			  helper/validate.cpp \
+			  helper/xml-parser.cpp \
+			  helper/zfile.cpp \
+			  helper/zfstream.cpp \
+			  ica/ica.cpp \
+			  intervals/intervals.cpp \
+			  lgbm/lgbm.cpp \
+			  lunapi/lunapi.cpp \
+			  lunapi/rtables.cpp \
+			  lunapi/segsrv.cpp \
+			  miscmath/crandom.cpp \
+			  miscmath/dynam.cpp \
+			  miscmath/miscmath.cpp \
+			  models/knn.cpp \
+			  models/model.cpp \
+			  models/predict.cpp \
+			  pdc/exe.cpp \
+			  pdc/external.cpp \
+			  pdc/pdc.cpp \
+			  pdc/pdcfuncs.cpp \
+			  pdc/sss.cpp \
+			  pops/espriors.cpp \
+			  pops/eval-stages.cpp \
+			  pops/indiv.cpp \
+			  pops/io.cpp \
+			  pops/options.cpp \
+			  pops/pops.cpp \
+			  pops/post-soap.cpp \
+			  pops/spec.cpp \
+			  resp/hb.cpp \
+			  spectral/irasa.cpp \
+			  spectral/mtm/adwait.cpp \
+			  spectral/mtm/hires.cpp \
+			  spectral/mtm/jfour1.cpp \
+			  spectral/mtm/jrealft.cpp \
+			  spectral/mtm/mtm-helpers.cpp \
+			  spectral/mtm/mtm-wrapper.cpp \
+			  spectral/mtm/mtm.cpp \
+			  spectral/mtm/spec-kurtosis.cpp \
+			  spectral/mt_spectrogram.cpp \
+			  spectral/welch.cpp \
+			  spindles/coupling.cpp \
+			  spindles/mspindles.cpp \
+			  spindles/plot-spindles.cpp \
+			  spindles/propag.cpp \
+			  spindles/slow-waves.cpp \
+			  spindles/spindles.cpp \
+			  sstore/sstore.cpp \
+			  staging/zratio.cpp \
+			  stats/catch22/catch22.cpp \
+			  stats/cluster.cpp \
+			  stats/cpt.cpp \
+			  stats/dcdflib.cpp \
+			  stats/eigen_ops.cpp \
+			  stats/glm.cpp \
+			  stats/gpa.cpp \
+			  stats/kmeans.cpp \
+			  stats/lda.cpp \
+			  stats/nmf.cpp \
+			  stats/qda.cpp \
+			  stats/running-stats.cpp \
+			  stats/statistics.cpp \
+			  suds/esp.cpp \
+			  suds/features.cpp \
+			  suds/library.cpp \
+			  suds/model.cpp \
+			  suds/outputs.cpp \
+			  suds/place.cpp \
+			  suds/rebase.cpp \
+			  suds/resoap.cpp \
+			  suds/soap.cpp \
+			  suds/suds.cpp \
+			  timeline/cache.cpp \
+			  timeline/chep.cpp \
+			  timeline/epoch-annots.cpp \
+			  timeline/epoch-mask.cpp \
+			  timeline/epochs.cpp \
+			  timeline/functions.cpp \
+			  timeline/hypno.cpp \
+			  timeline/records.cpp \
+			  timeline/timeline.cpp \
+			  tinyxml/tinystr.cpp \
+			  tinyxml/tinyxml.cpp \
+			  tinyxml/tinyxmlerror.cpp \
+			  tinyxml/tinyxmlparser.cpp \
+			  tinyxml/xmlreader.cpp
+
+C_SOURCES = db/sqlite3.c \
+			dsp/filter.c \
+			dsp/libsamplerate/samplerate.c \
+			dsp/libsamplerate/src_linear.c \
+			dsp/libsamplerate/src_sinc.c \
+			dsp/libsamplerate/src_zoh.c \
+			wingetopt/src/getopt.c \
+			zlib-1.3/adler32.c \
+			zlib-1.3/compress.c \
+			zlib-1.3/crc32.c \
+			zlib-1.3/deflate.c \
+			zlib-1.3/gzclose.c \
+			zlib-1.3/gzlib.c \
+			zlib-1.3/gzread.c \
+			zlib-1.3/gzwrite.c \
+			zlib-1.3/infback.c \
+			zlib-1.3/inffast.c \
+			zlib-1.3/inflate.c \
+			zlib-1.3/inftrees.c \
+			zlib-1.3/trees.c \
+			zlib-1.3/uncompr.c \
+			zlib-1.3/zutil.c \
+            stats/catch22/butterworth.c \
+     stats/catch22/c22_stats.c \
+stats/catch22/CO_AutoCorr.c \
+stats/catch22/DN_HistogramMode_10.c \
+stats/catch22/DN_HistogramMode_5.c \
+stats/catch22/DN_Mean.c \
+stats/catch22/DN_OutlierInclude.c \
+stats/catch22/DN_Spread_Std.c \
+stats/catch22/FC_LocalSimple.c \
+stats/catch22/fft.c \
+stats/catch22/helper_functions.c \
+stats/catch22/histcounts.c \
+stats/catch22/IN_AutoMutualInfoStats.c \
+stats/catch22/MD_hrv.c \
+stats/catch22/PD_PeriodicityWang.c \
+stats/catch22/SB_BinaryStats.c \
+stats/catch22/SB_CoarseGrain.c \
+stats/catch22/SB_MotifThree.c \
+stats/catch22/SB_TransitionMatrix.c \
+stats/catch22/SC_FluctAnal.c \
+stats/catch22/splinefit.c \
+stats/catch22/SP_Summaries.c
+
+# Define the object files
+CPP_OBJECTS = $(CPP_SOURCES:.cpp=.obj)
+C_OBJECTS = $(C_SOURCES:.c=.obj)
+OBJECTS = $(CPP_OBJECTS) $(C_OBJECTS)
+
+!MESSAGE CPP_OBJECTS = $(CPP_OBJECTS)
+!MESSAGE C_OBJECTS = $(C_OBJECTS)
+!MESSAGE OBJECTS = $(OBJECTS)
+
+
+# .exe is separate
+MAIN_SRC = main.cpp
+MAIN_OBJ = main.obj
+
+
+# Define the compiler flags
+CFLAGS = /O2 /EHsc /MD $(INCLUDES) /DM_PI=3.14159265358979323846 /Dssize_t=ptrdiff_t /std:c++17 -DWINDOWS -DNOMINMAX -DHAS_LGBM
+
+# Define the linker flags
+LDFLAGS = /LIBPATH:..\
+
+# Define the libraries to link against
+LIBS = ..\libfftw3-3.lib ..\libfftw3-3.lib ..\libfftw3l-3.lib ..\lib_lightgbm.lib
+
+# default build
+all: $(LIB_NAME) $(EXE_NAME)
+
+
+# Build the static library
+$(LIB_NAME): $(OBJECTS)
+    lib /OUT:$(LIB_NAME) $(LDFLAGS) $(OBJECTS) $(LIBS) 
+
+# Build the executable
+$(EXE_NAME): $(MAIN_OBJ) $(OBJECTS) $(LIB_NAME)
+	$(LINK) /OUT:$(EXE_NAME) $(MAIN_OBJ) $(OBJECTS) $(LIBS) $(LDFLAGS) /SUBSYSTEM:CONSOLE
+
+
+# Compile the source files
+#.cpp.obj:
+#    $(CC) $(CFLAGS) /c $< /Fo$(@D)/
+#.c.obj:
+#    $(CC) $(CFLAGS) /c $< /Fo$(@D)/
+
+# Compile the source files - revised 
+.cpp.obj:
+    $(CC) $(CFLAGS) /c $< /Fo$@
+.c.obj:
+    $(CC) $(CFLAGS) /c $< /Fo$@
+
+# explicit rule for main.cpp
+$(MAIN_OBJ): $(MAIN_SRC)
+	$(CC) $(CFLAGS) /c $(MAIN_SRC) /Fo$(MAIN_OBJ)
+
+# Clean up the build
+clean:
+	for /R %%f in (*.obj *.dll *.lib *.exe) do del "%%f"

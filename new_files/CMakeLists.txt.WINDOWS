@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.15...3.26)
+project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(Python COMPONENTS Interpreter Development)
+set(PYBIND11_NEWPYTHON ON)
+find_package(pybind11 CONFIG REQUIRED)
+
+include_directories("depends/fftw-3.3.5-dll64" )
+include_directories("depends/luna-base/" )
+include_directories("depends/luna-base/stats/" )
+include_directories("depends/luna-base/dirent/include/" )
+
+link_directories("depends")
+
+add_compile_definitions(M_PI=3.14159265358979323846)
+add_compile_definitions(ssize_t=ptrdiff_t)
+add_compile_definitions(WINDOWS)
+add_compile_definitions(NOMINMAX)
+
+get_filename_component(LUNA_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/depends/libluna.lib" ABSOLUTE)
+
+add_library(luna STATIC IMPORTED GLOBAL)
+
+set_target_properties(luna PROPERTIES
+    IMPORTED_LOCATION "${LUNA_LIB_PATH}"
+)
+
+pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
+target_link_libraries( lunapi0 PRIVATE luna)
+install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
+
+install(FILES
+    ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3-3.dll
+    ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3f-3.dll
+    ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3l-3.dll
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lunapi
+)

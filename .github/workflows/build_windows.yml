@@ -1,0 +1,94 @@
+name: Build and Publish Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_windows_wheels:
+    name: Build wheels on Windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Python build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine cibuildwheel
+
+      - name: Download and build FFTW
+        shell: cmd
+        run: |
+          mkdir depends
+          cd depends
+          curl -L https://fftw.org/pub/fftw/fftw-3.3.5-dll64.zip -o fftw-3.3.5-dll64.zip
+          7z x fftw-3.3.5-dll64.zip -offtw-3.3.5-dll64
+          cd fftw-3.3.5-dll64
+          lib /def:libfftw3-3.def
+          lib /def:libfftw3f-3.def
+          lib /def:libfftw3l-3.def
+          copy libfftw3-3.lib ..
+          copy libfftw3f-3.lib ..
+          copy libfftw3l-3.lib ..
+
+      - name: Build LightGBM
+        shell: cmd
+        run: |
+          cd depends
+          git clone --recursive https://github.com/microsoft/LightGBM
+          cd LightGBM
+          mkdir build
+          cd build
+          cmake -DBUILD_STATIC_LIB=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DUSE_OPENMP=OFF -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+          nmake
+          cd ..
+          copy lib_lightgbm.lib ..
+
+      - name: Build luna-base
+        shell: cmd
+        run: |
+          cd depends
+          git clone https://github.com/remnrem/luna-base.git
+          cd luna-base
+          copy %GITHUB_WORKSPACE%\new_files\NMakefile .
+          copy %GITHUB_WORKSPACE%\new_files\CMakeLists.txt.WINDOWS .
+          copy %GITHUB_WORKSPACE%\new_files\unistd.h .
+          git clone https://github.com/tronkko/dirent.git
+          git clone https://github.com/alex85k/wingetopt.git
+          nmake -f NMakefile
+          copy libluna.lib ..
+
+      - name: Copy Windows CMakeLists
+        shell: cmd
+        run: |
+          copy new_files\CMakeLists.txt.WINDOWS CMakeLists.txt
+
+      - name: Build wheels with cibuildwheel
+        run: python -m cibuildwheel --platform windows --output-dir wheelhouse .
+        env:
+          CIBW_SKIP: "pp* cp*-win32"
+          CIBW_ARCHS_WINDOWS: "AMD64"
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_ARGS="-A x64"
+          CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-*"
+          CIBW_BEFORE_BUILD: "pip install -U pip setuptools wheel pybind11"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows
+          path: ./wheelhouse/*.whl
+
+      - name: Publish to PyPI
+        run: twine upload wheelhouse\* --verbose --skip-existing
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
