@@ -83,7 +83,7 @@ jobs:
           hit="${{ steps.native_deps_cache.outputs.cache-hit }}"
           matched_key="${{ steps.native_deps_cache.outputs.cache-matched-key }}"
           has_cache="false"
-          if [[ "${hit}" == "true" || -n "${matched_key}" ]]; then
+          if [[ "${hit}" == "true" ]]; then
             has_cache="true"
           fi
           effective="${requested}"
