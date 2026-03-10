@@ -6,23 +6,19 @@ the interactive ``scope`` viewer built on ``ipywidgets`` and Plotly.
 
 import pandas as pd
 import numpy as np
-from scipy.stats.mstats import winsorize
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import plotly.express as px
-from ipywidgets import widgets, AppLayout
-from itertools import cycle
 
 from .segsrv import segsrv
 
 
 def default_xy():
-   """Default channel locations (64-ch EEG only, currently)
-      
-      Returns
-      -------
-      object
-              Result value produced by the Luna backend wrapper.
+   """Return default 2-D scalp electrode locations for a standard 64-channel EEG montage.
+
+   Returns
+   -------
+   pandas.DataFrame
+       DataFrame with columns ``['CH', 'X', 'Y']`` giving the
+       normalised Cartesian coordinates of each electrode (top-down view,
+       nose pointing up).
    """
    vals = [["FP1", "AF7", "AF3", "F1", "F3", "F5", "F7", "FT7", 
             "FC5", "FC3", "FC1", "C1", "C3", "C5", "T7", "TP7", "CP5", 
@@ -66,16 +62,18 @@ def default_xy():
 
 
 def stgcol(ss):
-    """Utility function: translate a sleep stage string to a colour for plotting
-       
-       Parameters
-       ----------
-       ss : object\n        Input argument `ss`.
-       
-       Returns
-       -------
-       object
-               Result value produced by the Luna backend wrapper.
+    """Map a sequence of sleep stage labels to their canonical hex display colours.
+
+    Parameters
+    ----------
+    ss : list of str
+        Sleep stage labels (e.g. ``['W', 'N1', 'N2', 'R', '?']``).
+
+    Returns
+    -------
+    list of str
+        Hex colour string for each label (e.g. ``'#0050C8FF'`` for N2).
+        Unknown labels are returned unchanged.
     """
     stgcols = { 'N1' : "#00BEFAFF" ,
                 'N2' : "#0050C8FF" ,
@@ -94,16 +92,20 @@ def stgcol(ss):
 
 
 def stgn(ss):
-    """Utility function: translate a sleep stage string to a number for plotting
-       
-       Parameters
-       ----------
-       ss : object\n        Input argument `ss`.
-       
-       Returns
-       -------
-       object
-               Result value produced by the Luna backend wrapper.
+    """Map a sequence of sleep stage labels to their canonical numeric codes.
+
+    Codes: N1 → −1, N2 → −2, N3 → −3, R → 0, W → 1, L/? → 2.
+
+    Parameters
+    ----------
+    ss : list of str
+        Sleep stage labels.
+
+    Returns
+    -------
+    list of int
+        Numeric stage code for each label.  Unknown labels are returned
+        unchanged.
     """
    
     stgns = { 'N1' : -1,
@@ -131,21 +133,30 @@ def stgn(ss):
 
 
 def hypno( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
-    """Plot a hypnogram
-       
-       Parameters
-       ----------
-       ss : object\n        Input argument `ss`.
-       e : object\n        Input argument `e`.
-       xsize : object\n        Input argument `xsize`.
-       ysize : object\n        Input argument `ysize`.
-       title : object\n        Input argument `title`.
-       
-       Returns
-       -------
-       object
-               Result value produced by the Luna backend wrapper.
+    """Plot a colour-coded hypnogram from a sequence of sleep stage labels.
+
+    Parameters
+    ----------
+    ss : array-like of str
+        Per-epoch sleep stage labels (e.g. from
+        :meth:`~lunapi.instance.inst.stages`).
+    e : array-like of int, optional
+        Epoch indices.  If omitted, epochs are numbered ``0, 1, 2, …``.
+        Values are divided by 120 before plotting to convert to hours
+        (assuming 30-second epochs).
+    xsize : float, optional
+        Figure width in inches.  Default ``20``.
+    ysize : float, optional
+        Figure height in inches.  Default ``2``.
+    title : str, optional
+        Optional plot title.
+
+    Returns
+    -------
+    None
+        The hypnogram is rendered inline via Matplotlib.
     """
+    import matplotlib.pyplot as plt
     ssn = stgn( ss )
     if e is None: e = np.arange(0, len(ssn), 1)
     e = e/120
@@ -164,21 +175,32 @@ def hypno( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
 
 
 def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
-   """Generate a hypno-density plot from a prior POPS/SOAP run
-      
-      Parameters
-      ----------
-      probs : object\n        Input argument `probs`.
-      e : object\n        Input argument `e`.
-      xsize : object\n        Input argument `xsize`.
-      ysize : object\n        Input argument `ysize`.
-      title : object\n        Input argument `title`.
-      
-      Returns
-      -------
-      object
-              Result value produced by the Luna backend wrapper.
+   """Plot a stacked-probability hypno-density chart from POPS/SOAP output.
+
+   Displays per-epoch posterior stage probabilities as a stacked area plot,
+   giving an at-a-glance picture of staging confidence across the night.
+
+   Parameters
+   ----------
+   probs : pandas.DataFrame
+       DataFrame containing columns ``PP_N1``, ``PP_N2``, ``PP_N3``,
+       ``PP_R``, and ``PP_W`` (as returned by the POPS command).
+   e : ignored, optional
+       Reserved for future use; currently unused.
+   xsize : float, optional
+       Figure width in inches.  Default ``20``.
+   ysize : float, optional
+       Figure height in inches.  Default ``2``.
+   title : str, optional
+       Optional plot title.
+
+   Returns
+   -------
+   None
+       The chart is rendered inline via Matplotlib.
    """
+
+   import matplotlib.pyplot as plt
 
    # no data?
    if len(probs) == 0: return
@@ -204,23 +226,43 @@ def hypno_density( probs , e = None , xsize = 20 , ysize = 2 , title = None ):
 # --------------------------------------------------------------------------------
 
 
-def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None , 
+def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = None ,
         xlines = None , ylines = None, dB = False ):
-    """Returns a PSD plot from PSD or MTM epoch table (CH_F)
-       
-       Parameters
-       ----------
-       df : object\n        Input argument `df`.
-       ch : object\n        Input argument `ch`.
-       var : object\n        Input argument `var`.
-       minf : object\n        Input argument `minf`.
-       maxf : object\n        Input argument `maxf`.
-       minp : object\n        Input argument `minp`.
-       maxp : object\n        Input argument `maxp`.
-       xlines : object\n        Input argument `xlines`.
-       ylines : object\n        Input argument `ylines`.
-       dB : object\n        Input argument `dB`.
+    """Plot power spectral density from a Luna ``PSD`` or ``MTM`` ``CH_F`` table.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Result table with at least columns ``'CH'``, ``'F'``, and the
+        power variable named by *var*.  Typically the ``'PSD: CH_F'`` or
+        ``'MTM: CH_F'`` table returned by :meth:`~lunapi.instance.inst.proc`.
+    ch : str or list of str
+        Channel label(s) to plot.
+    var : str, optional
+        Column name containing the power values (``'PSD'`` or ``'MTM'``).
+        Default ``'PSD'``.
+    minf : float, optional
+        Minimum frequency (Hz) for the x-axis.  Default: data minimum.
+    maxf : float, optional
+        Maximum frequency (Hz) for the x-axis.  Default: data maximum.
+    minp : float, optional
+        Minimum power for the y-axis.  Default: data minimum.
+    maxp : float, optional
+        Maximum power for the y-axis.  Default: data maximum.
+    xlines : float or list of float, optional
+        Vertical reference lines at these frequencies.
+    ylines : float or list of float, optional
+        Horizontal reference lines at these power values.
+    dB : bool, optional
+        If ``True``, convert power values to dB (10·log₁₀) before
+        plotting.  Default ``False``.
+
+    Returns
+    -------
+    None
+        The plot is rendered inline via Matplotlib.
     """
+    import matplotlib.pyplot as plt
     if ch is None: return
     if type( ch ) is not list: ch = [ ch ]
     if type( xlines ) is not list and xlines != None: xlines = [ xlines ]
@@ -255,19 +297,36 @@ def psd(df , ch, var = 'PSD' , minf = None, maxf = None, minp = None, maxp = Non
 
 
 def spec(df , ch = None , var = 'PSD' , mine = None , maxe = None , minf = None, maxf = None, w = 0.025 ):
-    """Returns a spectrogram from a PSD or MTM epoch table (CH_E_F)
-       
-       Parameters
-       ----------
-       df : object\n        Input argument `df`.
-       ch : object\n        Input argument `ch`.
-       var : object\n        Input argument `var`.
-       mine : object\n        Input argument `mine`.
-       maxe : object\n        Input argument `maxe`.
-       minf : object\n        Input argument `minf`.
-       maxf : object\n        Input argument `maxf`.
-       w : object\n        Input argument `w`.
+    """Plot an epoch-by-frequency spectrogram from a Luna ``CH_E_F`` result table.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Result table with columns ``'E'`` (epoch), ``'F'`` (frequency),
+        ``'CH'`` (channel), and the power variable named by *var*.
+        Typically the ``'PSD: CH_E_F'`` or ``'MTM: CH_E_F'`` table.
+    ch : str, optional
+        Channel to plot.  If ``None``, all channels in *df* are included.
+    var : str, optional
+        Column name for power values.  Default ``'PSD'``.
+    mine : int, optional
+        First epoch to display.  Default: first epoch in the data.
+    maxe : int, optional
+        Last epoch to display.  Default: last epoch in the data.
+    minf : float, optional
+        Minimum frequency (Hz).  Default: data minimum.
+    maxf : float, optional
+        Maximum frequency (Hz).  Default: data maximum.
+    w : float, optional
+        Winsorisation proportion applied to power values before colour
+        mapping.  Default ``0.025``.
+
+    Returns
+    -------
+    None
+        The spectrogram is rendered inline via Matplotlib.
     """
+    from scipy.stats.mstats import winsorize
     if ch is not None: df = df.loc[ df['CH'] == ch ]
     if len(df) == 0: return
     x = df['E'].to_numpy(dtype=int)
@@ -292,26 +351,35 @@ def spec(df , ch = None , var = 'PSD' , mine = None , maxe = None , minf = None,
 
 
 def spec0( x , y , z , mine , maxe , minf, maxf ):
-   """Render a 2D spectrogram heatmap from epoch/frequency/value vectors.
-      
-      Parameters
-      ----------
-      x : array-like
-          Epoch indices.
-      y : array-like
-          Frequency bins.
-      z : array-like
-          Values to aggregate in each epoch-frequency cell.
-      mine, maxe : int
-          Epoch bounds for plotting.
-      minf, maxf : float
-          Frequency bounds for plotting.
-      
-      Returns
-      -------
-      object
-              Result value produced by the Luna backend wrapper.
+   """Render a 2-D spectrogram heatmap from raw epoch/frequency/value vectors.
+
+   Low-level helper called by :func:`spec`.  Bins *z* values into an
+   epoch × frequency grid and displays the result as a ``pcolormesh``
+   plot.
+
+   Parameters
+   ----------
+   x : array-like of int
+       Epoch index for each observation.
+   y : array-like of float
+       Frequency (Hz) for each observation.
+   z : array-like of float
+       Power value for each observation.
+   mine : int
+       Minimum epoch index for the x-axis.
+   maxe : int
+       Maximum epoch index for the x-axis.
+   minf : float
+       Minimum frequency (Hz) for the y-axis.
+   maxf : float
+       Maximum frequency (Hz) for the y-axis.
+
+   Returns
+   -------
+   None
+       The heatmap is rendered inline via Matplotlib.
    """
+   import matplotlib.pyplot as plt
    xn = max(x) - min(x) + 1
    yn = np.unique(y).size
    zi, yi, xi = np.histogram2d(y, x, bins=(yn,xn), weights=z, density=False )
@@ -334,31 +402,50 @@ def spec0( x , y , z , mine , maxe , minf, maxf ):
 
 
 def topo_heat(chs, z,  ths = None , th=0.05 ,
-              topo = None , 
-              lmts= None , sz=70, colormap = "bwr", title = "", 
+              topo = None ,
+              lmts= None , sz=70, colormap = "bwr", title = "",
               rimcolor="black", lab = "dB"):
-    """Generate a channel-wise topoplot
-       
-       Parameters
-       ----------
-       chs : object\n        Input argument `chs`.
-       z : object\n        Input argument `z`.
-       ths : object\n        Input argument `ths`.
-       th : object\n        Input argument `th`.
-       topo : object\n        Input argument `topo`.
-       lmts : object\n        Input argument `lmts`.
-       sz : object\n        Input argument `sz`.
-       colormap : object\n        Input argument `colormap`.
-       title : object\n        Input argument `title`.
-       rimcolor : object\n        Input argument `rimcolor`.
-       lab : object\n        Input argument `lab`.
-       
-       Returns
-       -------
-       object
-               Result value produced by the Luna backend wrapper.
+    """Plot a channel-wise topographic heat map on a scalp electrode layout.
+
+    Renders a scatter plot in electrode space where each dot is coloured
+    by the scalar value *z* for that channel.  Channels with an associated
+    p-value below *th* are drawn with a thicker rim.
+
+    Parameters
+    ----------
+    chs : array-like of str
+        Channel labels corresponding to each value in *z*.
+    z : array-like of float
+        Scalar values to colour-map (one per channel in *chs*).
+    ths : array-like of float, optional
+        P-values (or thresholding values) for each channel.  Channels
+        with ``ths < th`` receive a highlighted rim.  Default ``None``
+        (no thresholding).
+    th : float, optional
+        Significance threshold applied to *ths*.  Default ``0.05``.
+    topo : pandas.DataFrame, optional
+        Electrode coordinate table with columns ``['CH', 'X', 'Y']``.
+        Defaults to the 64-channel layout from :func:`default_xy`.
+    lmts : list of two float, optional
+        ``[vmin, vmax]`` colour-map limits.  Default: ``[min(z), max(z)]``.
+    sz : float, optional
+        Marker size (points²) for each electrode dot.  Default ``70``.
+    colormap : str, optional
+        Matplotlib colour map name.  Default ``'bwr'``.
+    title : str, optional
+        Text label placed in the upper-left of the figure.  Default ``''``.
+    rimcolor : str, optional
+        Edge colour for all electrode markers.  Default ``'black'``.
+    lab : str, optional
+        Colour-bar label.  Default ``'dB'``.
+
+    Returns
+    -------
+    None
+        The topoplot is rendered inline via Matplotlib.
     """
 
+    import matplotlib.pyplot as plt
     z = np.array(z)
     if ths is not None: ths = np.array(ths)
     if topo is None: topo = default_xy()
@@ -470,9 +557,14 @@ def scope( p,
         Widget application, or ``None`` when no valid channels/annots exist.
     """
 
+    import plotly.graph_objects as go
+    import plotly.express as px
+    from ipywidgets import widgets, AppLayout
+    from itertools import cycle
+
     # defaults
     scope_epoch_sec = 30
-    
+
     # internally, we use 'sigs' but 'chs' is a more lunapi-consistent label
     sigs = chs
     
