@@ -15,4 +15,3 @@ lunapi.lunapi1
 __version__ = "1.4.3"
 
 from lunapi.lunapi1 import *
-from scipy.stats.mstats import winsorize

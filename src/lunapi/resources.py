@@ -23,12 +23,12 @@ lp_version = __version__
 
 
 def version():
-   """Return package and backend version metadata.
-      
-      Returns
-      -------
-      object
-              See function description for the concrete return type.
+   """Return version metadata for both the Python package and the C++ backend.
+
+   Returns
+   -------
+   dict
+       ``{'lunapi': '<version>', 'luna': '<version>'}``
    """
    from .results import version as _version
    return _version()
