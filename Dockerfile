@@ -41,7 +41,7 @@ RUN mkdir /data \
  && mkdir /data1 \
  && mkdir /data2 \
  && cd / \
- && wget https://zzz.bwh.harvard.edu/dist/luna/tutorial.zip \
+ && wget https://zzz.nyspi.org/dist/luna/tutorial.zip \
  && unzip tutorial.zip \
  && rm tutorial.zip
 

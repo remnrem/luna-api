@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "lunapi"
-version = "1.4.4"
+version = "1.4.5"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9"
@@ -22,12 +22,13 @@ dependencies = [
 keywords = ["Sleep", "EEG", "PSG", "Luna", "Signal processing" ]
 
 authors = [
-  {name = "Shaun Purcell", email = "smpurcell@bwh.harvard.edu"},
+  {name = "Shaun Purcell", email = "shaun.purcell@nyspi.columbia.edu"},
+  {name = "Tejas Karkera", email = "tkarkera@mgh.harvard.edu"},
   {name = "Senthil Palanivelu", email = "spalanivelu@mgh.harvard.edu"},
   {name = "Nataliia Kozhemiako", email = "nkozhemiako@bwh.harvard.edu"} ]
 
 maintainers = [
-  {name = "Senthil Palanivelu", email = "spalanivelu@mgh.harvard.edu"},
+  {name = "Tejas Karkera", email = "tkarkera@mgh.harvard.edu"}
 ] 
 
 classifiers = [
