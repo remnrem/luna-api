@@ -55,7 +55,7 @@ class proj:
       Searches *args* for EDF and annotation files and constructs a
       three-column sample list (ID, EDF path, annotation path).
 
-      See https://zzz.bwh.harvard.edu/luna/ref/helpers/#-build for details.
+      See https://zzz.nyspi.org/luna/ref/helpers/#-build for details.
 
       After a successful call, :meth:`sample_list` (with no arguments) will
       return the discovered records.
@@ -150,7 +150,7 @@ class proj:
       readable.  Equivalent to the ``--validate`` option of the Luna
       command-line tool.
 
-      See https://zzz.bwh.harvard.edu/luna/ref/helpers/#-validate for details.
+      See https://zzz.nyspi.org/luna/ref/helpers/#-validate for details.
 
       Returns
       -------
