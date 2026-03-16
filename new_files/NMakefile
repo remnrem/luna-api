@@ -211,6 +211,7 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  suds/resoap.cpp \
 			  suds/soap.cpp \
 			  suds/suds.cpp \
+			  tests/tests.cpp \
 			  timeline/actig.cpp \
 			  timeline/s2c.cpp \
 			  timeline/cache.cpp \
