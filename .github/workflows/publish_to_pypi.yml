@@ -113,10 +113,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/cibuildwheel
-          key: cibuildwheel-tools-macos-v3.1.0
+          key: cibuildwheel-tools-macos-v3.4.0
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.1.0
+        uses: pypa/cibuildwheel@v3.4.0
         env:
           CIBW_ARCHS_MACOS: "native"     # macos-15-intel => x86_64, macos-15 => arm64
           CIBW_ARCHS_LINUX: "x86_64"
