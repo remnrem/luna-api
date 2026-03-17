@@ -108,6 +108,13 @@ jobs:
             echo "CMAKE_OSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
           fi
 
+      - name: Cache cibuildwheel tools (macOS)
+        if: startsWith(matrix.os, 'macos-')
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/cibuildwheel
+          key: cibuildwheel-tools-macos-v3.1.0
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.1.0
         env:
@@ -130,7 +137,7 @@ jobs:
 
           # Python versions
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
-          CIBW_SKIP: "cp313t-* cp314t-* *-musllinux_*"
+          CIBW_SKIP: "*-musllinux_*"
 
         with:
           output-dir: wheelhouse
