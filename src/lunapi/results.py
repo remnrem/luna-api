@@ -12,7 +12,10 @@ from .resources import lp_version
 import lunapi.lunapi0 as _luna
 
 import pandas as pd
-from IPython.core import display as ICD
+try:
+    from IPython.display import display as ICD
+except ImportError:
+    ICD = None
 
 
 def fetch_doms():
@@ -309,7 +312,8 @@ def show( dfs ):
    """
    for title , df in dfs.items():
       print( _color.BOLD + _color.DARKCYAN + title + _color.END )
-      ICD.display(df)
+      if ICD is not None:
+         ICD(df)
 
 
 # --------------------------------------------------------------------------------

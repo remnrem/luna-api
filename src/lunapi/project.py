@@ -7,7 +7,10 @@ managing a Luna project/session and sample-list lifecycle.
 import lunapi.lunapi0 as _luna
 
 import pandas as pd
-from IPython.display import display
+try:
+    from IPython.display import display as _ipy_display
+except ImportError:
+    _ipy_display = None
 
 from .resources import resources, lp_version
 from .results import tables, cmdfile
@@ -363,7 +366,8 @@ class proj:
       if len( t ) == 0: return t
       t.columns = ["Type", "Preferred", "Case-insensitive, sanitized alias" ]
       with pd.option_context('display.max_rows', None,):
-         display(t)
+         if _ipy_display is not None:
+            _ipy_display(t)
 
    #------------------------------------------------------------------------
 
@@ -605,7 +609,8 @@ class proj:
       if len( t ) == 0: return t
       t.columns = ["ID","Gapped","Date","Start(hms)","Stop(hms)","Dur(hms)","Dur(s)","# sigs","# annots","Signals" ]
       with pd.option_context('max_colwidth',None):
-         display(t)
+         if _ipy_display is not None:
+            _ipy_display(t)
 
 
    #------------------------------------------------------------------------
