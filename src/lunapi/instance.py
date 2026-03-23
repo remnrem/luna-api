@@ -12,13 +12,16 @@ from scipy.stats.mstats import winsorize
 from scipy.signal import sosfilt
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from IPython.core import display as ICD
+try:
+    from IPython.core import display as ICD
+    from IPython.display import display as _ipy_display
+except ImportError:
+    ICD = None
+    _ipy_display = None
 import plotly.graph_objects as go
 import time
 import pathlib
 import os
-
-from IPython.display import display
 
 from .project import proj
 from .resources import resources
@@ -267,7 +270,8 @@ class inst:
       if len( t ) == 0: return t
       t.columns = ["ID","Gapped","Date","Start(hms)","Stop(hms)","Dur(hms)","Dur(s)","# sigs","# annots","Signals" ]
       with pd.option_context('display.max_colwidth',None):
-         display(t)
+         if _ipy_display is not None:
+            _ipy_display(t)
 
    #------------------------------------------------------------------------
 
