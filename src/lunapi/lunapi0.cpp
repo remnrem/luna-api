@@ -224,6 +224,8 @@ PYBIND11_MODULE(lunapi0, m) {
 
       .def("refresh", &lunapi_inst_t::refresh, "Reattach the current EDF")
 
+      .def("refresh_channel_vars", &lunapi_inst_t::refresh_channel_vars, "Re-populate channel-type variables (e.g. ${eeg}) without re-reading from disk")
+
       .def("drop", &lunapi_inst_t::drop, "Drop the current EDF")
 
       .def("desc", &lunapi_inst_t::desc, "Return basic descriptive information")
