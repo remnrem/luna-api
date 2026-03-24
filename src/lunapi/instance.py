@@ -159,6 +159,19 @@ class inst:
       _proj = proj(False)
       _proj.reset();
 
+   #------------------------------------------------------------------------
+
+   def refresh_channel_vars( self ):
+      """Re-populate channel-type variables (e.g. ${eeg}, ${ecg}) without
+      re-reading the EDF from disk.  Call this after proj.reinit() to restore
+      the channel-type variables that reinit() clears.
+
+      Returns
+      -------
+      None
+      """
+      self.edf.refresh_channel_vars()
+
 
    #------------------------------------------------------------------------
 
