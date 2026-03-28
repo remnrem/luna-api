@@ -161,6 +161,8 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  pdc/pdcfuncs.cpp \
 			  pdc/sss.cpp \
 			  pops/espriors.cpp \
+			  pops/hypnodensity.cpp \
+			  pops/hdstats.cpp \
 			  pops/eval-stages.cpp \
 			  pops/indiv.cpp \
 			  pops/io.cpp \
