@@ -290,7 +290,7 @@ MAIN_OBJ = main.obj
 
 
 # Define the compiler flags
-CFLAGS = /O2 /EHsc /MD $(INCLUDES) /DM_PI=3.14159265358979323846 /Dssize_t=ptrdiff_t /std:c++17 -DWINDOWS -DNOMINMAX -DHAS_LGBM
+CFLAGS = /O2 /EHsc /MD /bigobj $(INCLUDES) /DM_PI=3.14159265358979323846 /Dssize_t=ptrdiff_t /std:c++17 /DWINDOWS /DNOMINMAX /DHAS_LGBM
 
 # Define the linker flags
 LDFLAGS = /LIBPATH:..\
