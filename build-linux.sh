@@ -50,6 +50,10 @@ restore_fftw() {
   cp "${FFTW_LIB}" "${DEPS_DIR}/libfftw3.a"
   mkdir -p "${DEPS_DIR}/include"
   cp "${FFTW_HDR}" "${DEPS_DIR}/include/fftw3.h"
+  if [[ -w /usr/local/lib || ! -e /usr/local/lib ]]; then
+    mkdir -p /usr/local/lib
+    cp "${FFTW_LIB}" /usr/local/lib/libfftw3.a
+  fi
   if [[ -w /usr/local/include || ! -e /usr/local/include ]]; then
     mkdir -p /usr/local/include
     cp "${FFTW_HDR}" /usr/local/include/fftw3.h
@@ -259,13 +263,23 @@ else
 fi
 cd luna-base
 if [[ "${QUIET}" == "1" ]]; then
-  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ LDFLAGS="${LDFLAGS:-} -pthread" LDLIBS="${LDLIBS:-} -pthread" >> "${BUILD_LOG}" 2>&1 || {
+  make -j4 \
+    LGBM=1 \
+    LGBM_PATH=../LightGBM/ \
+    CPPFLAGS="${CPPFLAGS:-} -I${DEPS_DIR}/include" \
+    LDFLAGS="${LDFLAGS:-} -L${DEPS_DIR} -L/usr/local/lib -pthread" \
+    LDLIBS="${LDLIBS:-} -pthread" >> "${BUILD_LOG}" 2>&1 || {
     echo "luna-base build failed; tail of ${BUILD_LOG}:"
     tail -n 200 "${BUILD_LOG}" || true
     exit 1
   }
 else
-  make -j4 LGBM=1 LGBM_PATH=../LightGBM/ LDFLAGS="${LDFLAGS:-} -pthread" LDLIBS="${LDLIBS:-} -pthread"
+  make -j4 \
+    LGBM=1 \
+    LGBM_PATH=../LightGBM/ \
+    CPPFLAGS="${CPPFLAGS:-} -I${DEPS_DIR}/include" \
+    LDFLAGS="${LDFLAGS:-} -L${DEPS_DIR} -L/usr/local/lib -pthread" \
+    LDLIBS="${LDLIBS:-} -pthread"
 fi
 cp libluna.a "${LUNA_LIB}"
 
