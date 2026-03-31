@@ -415,7 +415,7 @@ class segsrv:
       -------
       None
       """
-      self.segsrv.make_sigmod( mod_label, mod_ch, 'raw' , [ ] )
+      self.segsrv.make_sigmod( mod_label, mod_ch, mod_type , [ ] )
 
    def apply_sigmod( self, mod_label, mod_ch, slot ):
       """Apply a registered signal modifier to a display slot.

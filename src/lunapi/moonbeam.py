@@ -6,11 +6,16 @@ instances.  Dataset/file mappings are driven by a curated TSV manifest
 maintained at https://github.com/remnrem/luna-api (``nsrr/MANIFEST``).
 """
 
+import base64
 import functools
+import getpass
+import hashlib
+import json
 import os
 import pathlib
 import re
 import shutil
+import socket
 import tempfile
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -28,6 +33,83 @@ _MANIFEST_URL = ("https://raw.githubusercontent.com/remnrem/luna-api/"
 _MANIFEST_LOCAL = ".manifest"   # filename within cdir
 _REQUEST_DELAY = 0.15           # seconds between API calls
 _MAX_WORKERS = 4                # parallel download threads
+_DATASETS_PAGE_SIZE = 10
+_TOKEN_PATH = pathlib.Path.home() / '.config' / 'lunapi' / '.token'
+_PERMS_PATH = pathlib.Path.home() / '.config' / 'lunapi' / '.allowed_cohorts.json'
+
+
+# ------------------------------------------------------------------
+# Token obfuscation helpers (module-level, no extra dependencies)
+# ------------------------------------------------------------------
+
+def _machine_key():
+    """SHA-256 key derived from the current user + hostname."""
+    seed = f"{getpass.getuser()}@{socket.gethostname()}:lunapi-nsrr"
+    return hashlib.sha256(seed.encode()).digest()
+
+
+def _obfuscate(token):
+    """XOR *token* with the machine key and return a base64 string."""
+    key = _machine_key()
+    xored = bytes(b ^ key[i % len(key)] for i, b in enumerate(token.encode()))
+    return base64.b64encode(xored).decode()
+
+
+def _deobfuscate(data):
+    """Reverse of :func:`_obfuscate`; returns the original token string."""
+    key = _machine_key()
+    xored = base64.b64decode(data.encode())
+    return bytes(b ^ key[i % len(key)] for i, b in enumerate(xored)).decode()
+
+
+def _save_token(token):
+    """Write *token* to the cache file (permissions 0600)."""
+    _TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _TOKEN_PATH.write_text(_obfuscate(token))
+    _TOKEN_PATH.chmod(0o600)
+
+
+def _load_token():
+    """Return the cached token, or None if not present / unreadable."""
+    if not _TOKEN_PATH.exists():
+        return None
+    try:
+        return _deobfuscate(_TOKEN_PATH.read_text().strip())
+    except Exception:
+        return None
+
+
+def _token_cache_key(token):
+    """Return a stable non-reversible cache key for a token."""
+    return hashlib.sha256(str(token).encode()).hexdigest()
+
+
+def _save_allowed_cohorts(token, cohorts):
+    """Persist the token-visible cohort slugs for reuse on future connects."""
+    _PERMS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "token_sha256": _token_cache_key(token),
+        "cohorts": sorted(str(x) for x in cohorts),
+        "updated_at": time.time(),
+    }
+    _PERMS_PATH.write_text(json.dumps(payload))
+    _PERMS_PATH.chmod(0o600)
+
+
+def _load_allowed_cohorts(token):
+    """Load cached token-visible cohort slugs, if they match this token."""
+    if not _PERMS_PATH.exists():
+        return None
+    try:
+        payload = json.loads(_PERMS_PATH.read_text())
+    except Exception:
+        return None
+    if payload.get("token_sha256") != _token_cache_key(token):
+        return None
+    cohorts = payload.get("cohorts")
+    if not isinstance(cohorts, list):
+        return None
+    return {str(x) for x in cohorts if str(x).strip()}
 
 
 def _fmt_size(nbytes):
@@ -49,38 +131,54 @@ class moonbeam:
 
     Parameters
     ----------
-    nsrr_tok : str
+    nsrr_tok : str, optional
         Personal NSRR API token (obtain at ``https://sleepdata.org/token``).
+        If omitted, the token saved by a previous call is used.
     cdir : str, optional
         Local download cache.  Defaults to ``luna-nsrr`` inside the system
         temp directory.
 
     Examples
     --------
-    >>> mb = moonbeam('my-token')
+    >>> mb = moonbeam('my-token')          # first use — token is cached
+    >>> mb = moonbeam()                    # subsequent use — token loaded automatically
+    >>> moonbeam.clear_token()             # remove cached token
     >>> mb.cohorts()
-    >>> mb.cohort('cfs')                  # all subcohorts
-    >>> mb.cohort('cfs', 'cfs-visit5')    # one subcohort
+    >>> mb.cohort('cfs')                   # all subcohorts
+    >>> mb.cohort('cfs', 'cfs-visit5')     # one subcohort
     >>> p  = mb.inst('cfs-visit5-800001')
     >>> mb.pull_many(['cfs-visit5-800001', 'cfs-visit5-800002'])
     >>> mb.status()
     """
 
-    def __init__(self, nsrr_tok, cdir=None):
+    def __init__(self, nsrr_tok=None, cdir=None):
+        if nsrr_tok is None:
+            nsrr_tok = _load_token()
+            if nsrr_tok is None:
+                raise ValueError(
+                    "No NSRR token provided and none cached.\n"
+                    "Pass nsrr_tok= or call moonbeam.save_token('your-token').\n"
+                    "Obtain a token at https://sleepdata.org/token"
+                )
+
         self.nsrr_tok = nsrr_tok
         self._last_req = 0.0
-        self.df1 = None           # accessible cohorts DataFrame
+        self.df1 = None           # cohort summary DataFrame
         self.df2 = None           # current cohort/subcohort manifest DataFrame
         self.curr_cohort = None
         self.curr_subcohort = None
         self.curr_id = None
         self.curr_edf = None      # remote path within cohort
         self.curr_annots = []     # list of remote annotation paths
+        self._allowed_cohort_slugs = None
 
         # _mf: cohort -> subcohort -> id -> {'edf': str, 'annots': [str,...]}
         self._mf = {}
 
         self._verify_token()
+        _save_token(nsrr_tok)     # cache after successful auth
+        self._allowed_cohort_slugs = _load_allowed_cohorts(nsrr_tok)
+
         if cdir is None:
             cdir = os.path.join(tempfile.gettempdir(), 'luna-nsrr')
         self.set_cache(cdir)
@@ -88,11 +186,53 @@ class moonbeam:
         self.df1 = self.cohorts()
 
     # ------------------------------------------------------------------
+    # Token management
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def save_token(token):
+        """Save *token* to the local cache for passwordless future sessions.
+
+        The token is obfuscated using XOR with a SHA-256 key derived from
+        the current username and hostname, then base64-encoded and written to
+        ``~/.config/lunapi/.token`` with permissions ``0600`` (owner
+        read/write only).  This is not cryptographic encryption, but the file
+        is not human-readable and is bound to the specific user account and
+        machine — a copy of the file will not decode on a different system.
+
+        Call :meth:`clear_token` to remove the cached token.
+
+        Parameters
+        ----------
+        token : str
+            NSRR API token (obtain at ``https://sleepdata.org/token``).
+        """
+        _save_token(token)
+        print(f"Token saved to {_TOKEN_PATH}")
+
+    @staticmethod
+    def clear_token():
+        """Remove the cached NSRR token from ``~/.config/lunapi/.token``.
+
+        After calling this method, an explicit *nsrr_tok* argument will be
+        required when constructing a new :class:`moonbeam` instance.
+        """
+        if _TOKEN_PATH.exists():
+            _TOKEN_PATH.unlink()
+            print(f"Cached token removed ({_TOKEN_PATH}).")
+        else:
+            print("No cached token found.")
+
+    # ------------------------------------------------------------------
     # Core HTTP helper
     # ------------------------------------------------------------------
 
     def _get(self, url, params=None, stream=False, timeout=60):
-        """Rate-limited authenticated GET."""
+        """Rate-limited authenticated GET request.
+
+        Enforces a minimum inter-request delay of ``_REQUEST_DELAY`` seconds
+        and appends ``auth_token`` to every request automatically.
+        """
         since = time.monotonic() - self._last_req
         if since < _REQUEST_DELAY:
             time.sleep(_REQUEST_DELAY - since)
@@ -103,7 +243,17 @@ class moonbeam:
         return r
 
     def _verify_token(self):
-        """Confirm the token is valid; raise on failure."""
+        """Validate the token against the sleepdata.org account API.
+
+        Prints the authenticated username and e-mail on success.
+
+        Raises
+        ------
+        RuntimeError
+            If the sleepdata.org API cannot be reached.
+        ValueError
+            If the token is rejected (``authenticated: false``).
+        """
         try:
             r = self._get(f"{_API_V1}/account/profile.json")
             data = r.json()
@@ -133,27 +283,76 @@ class moonbeam:
         os.makedirs(self.cdir, exist_ok=True)
 
     def cached(self, rel_path):
-        """Return True if *rel_path* already exists in the local cache.
+        """Return whether *rel_path* already exists in the local cache.
 
         Parameters
         ----------
         rel_path : str
-            Path relative to the cache root
-            (e.g. ``'cfs/polysomnography/edfs/cfs-visit5-800001.edf'``).
+            Path relative to the cache root, i.e.
+            ``{cohort}/{remote_path}`` (e.g.
+            ``'cfs/polysomnography/edfs/cfs-visit5-800001.edf'``).
+
+        Returns
+        -------
+        bool
+            ``True`` if the file is present on disk; ``False`` otherwise.
         """
         return os.path.exists(os.path.join(self.cdir, rel_path))
 
     def _local_path(self, cohort, remote_path):
-        """Absolute local :class:`~pathlib.Path` for a cohort file."""
+        """Return the absolute local :class:`~pathlib.Path` for a dataset file.
+
+        The on-disk layout mirrors the remote structure:
+        ``{cdir}/{cohort}/{remote_path}``.
+        """
         return pathlib.Path(self.cdir) / cohort / remote_path.lstrip('/')
 
-    def status(self, cohort=None):
-        """Print a summary of files present in the local cache.
+    def clear_cache(self, cohort=None):
+        """Delete downloaded files from the local cache.
+
+        The cached manifest (``.manifest``) is always preserved so that the
+        next session does not need to re-fetch it from GitHub.
 
         Parameters
         ----------
         cohort : str, optional
-            Restrict report to one cohort.
+            If given, remove only that cohort's sub-folder (e.g. ``'cfs'``).
+            If omitted, all cohort sub-folders are removed.
+        """
+        root = pathlib.Path(self.cdir)
+        if cohort:
+            target = root / cohort
+            if not target.exists():
+                print(f"Nothing cached for '{cohort}'.")
+                return
+            size = sum(f.stat().st_size for f in target.rglob('*') if f.is_file())
+            shutil.rmtree(target)
+            print(f"Removed {target}  ({_fmt_size(size)})")
+        else:
+            if not root.exists():
+                print("Cache is already empty.")
+                return
+            total = 0
+            for child in sorted(root.iterdir()):
+                # preserve the manifest file itself
+                if child.is_dir():
+                    size = sum(f.stat().st_size for f in child.rglob('*') if f.is_file())
+                    total += size
+                    shutil.rmtree(child)
+                    print(f"  removed {child.name}/  ({_fmt_size(size)})")
+            print(f"Cache cleared  ({_fmt_size(total)} freed)")
+
+    def status(self, cohort=None):
+        """Print a tree of downloaded files with sizes.
+
+        Lists every file under each cohort sub-folder, grouped by cohort,
+        with a grand total at the end.
+
+        Parameters
+        ----------
+        cohort : str, optional
+            Restrict the report to one cohort (e.g. ``'cfs'``).  If omitted,
+            all cohorts present in the cache are shown.
         """
         root = pathlib.Path(self.cdir)
         if not root.exists():
@@ -188,6 +387,7 @@ class moonbeam:
     # ------------------------------------------------------------------
 
     def _manifest_local_path(self):
+        """Return the :class:`~pathlib.Path` of the locally cached manifest."""
         return pathlib.Path(self.cdir) / _MANIFEST_LOCAL
 
     def _parse_manifest(self, text):
@@ -252,66 +452,150 @@ class moonbeam:
               f"({n} individuals, {len(self._mf)} cohort(s)).")
 
     def refresh_manifest(self):
-        """Re-download the manifest from GitHub, replacing the cached copy."""
+        """Re-download the manifest from GitHub, replacing the cached copy.
+
+        Use this after new datasets or individuals have been added to the
+        upstream manifest at ``nsrr/MANIFEST`` in the luna-api repository.
+        The in-memory ``_mf`` dict and the local ``.manifest`` file are both
+        updated immediately.
+        """
         self._fetch_manifest()
 
     # ------------------------------------------------------------------
     # Cohort listing
     # ------------------------------------------------------------------
 
-    def cohorts(self):
-        """Return a DataFrame of NSRR datasets the current token can access.
+    def _datasets_on_page(self, page):
+        """Return one page of dataset records visible to this token."""
+        r = self._get(
+            f"{_API_V1}/datasets.json",
+            params={"page": page},
+            timeout=60,
+        )
+        r.raise_for_status()
+        data = r.json()
+        if isinstance(data, list):
+            return data
+        return []
 
-        Datasets are filtered to those present in the manifest; the
-        ``Subcohorts`` column shows which logical sub-datasets are defined.
+    def allowed_cohorts(self, refresh=False):
+        """Return the dataset slugs visible to the current NSRR token.
+
+        This queries the NSRR dataset listing API and caches the resulting
+        slug set on the instance. Public datasets and datasets explicitly
+        granted to the token are both included because both are downloadable.
+
+        Parameters
+        ----------
+        refresh : bool, optional
+            Force a fresh API query even if cached results are available.
+
+        Returns
+        -------
+        set[str]
+            Dataset slugs visible to the token.
+        """
+        if self._allowed_cohort_slugs is not None and not refresh:
+            return set(self._allowed_cohort_slugs)
+
+        allowed = set()
+        page = 1
+        while True:
+            datasets = self._datasets_on_page(page)
+            if not datasets:
+                break
+            for row in datasets:
+                if isinstance(row, dict):
+                    slug = row.get("slug")
+                    if slug:
+                        allowed.add(str(slug))
+            if len(datasets) < _DATASETS_PAGE_SIZE:
+                break
+            page += 1
+
+        self._allowed_cohort_slugs = allowed
+        _save_allowed_cohorts(self.nsrr_tok, allowed)
+        return set(allowed)
+
+    def cohorts(self):
+        """Return a DataFrame of cohorts defined in the manifest.
+
+        Uses the manifest for cohort membership counts and the cached result
+        of :meth:`allowed_cohorts` for authorization annotations.  The result
+        is also stored as ``self.df1``.
 
         Returns
         -------
         pandas.DataFrame
-            Columns: ``['Cohort', 'Description', 'Subcohorts']``.
-        """
-        accessible = {}
-        page = 1
-        while True:
-            r = self._get(f"{_API_V1}/datasets.json", params={'page': page})
-            r.raise_for_status()
-            data = r.json()
-            if not data:
-                break
-            for d in data:
-                slug = d.get('slug', '')
-                accessible[slug] = d.get('name', slug)
-            if len(data) < 20:
-                break
-            page += 1
+            One row per cohort with columns:
 
+            ``Cohort``
+                NSRR dataset slug (e.g. ``'cfs'``).
+            ``Subcohorts``
+                Comma-separated list of subcohort labels defined for this
+                cohort.
+            ``N``
+                Total number of individuals across all subcohorts.
+            ``Cached``
+                Number of individuals whose EDF is already on disk.
+            ``Authorized``
+                ``True`` when the current NSRR token can see/download the
+                cohort in the NSRR dataset listing, ``False`` otherwise.
+        """
+        allowed = set(self._allowed_cohort_slugs or ())
         rows = []
-        for slug, name in accessible.items():
-            subcohorts = list(self._mf.get(slug, {}).keys())
+        for cohort, subcohort_data in self._mf.items():
+            subcohorts = list(subcohort_data.keys())
+            n = 0
+            cached = 0
+            for subs in subcohort_data.values():
+                for info in subs.values():
+                    n += 1
+                    if self._local_path(cohort, info['edf']).exists():
+                        cached += 1
             rows.append({
-                'Cohort': slug,
-                'Description': name,
-                'Subcohorts': ', '.join(subcohorts) if subcohorts else '(not in manifest)',
+                'Cohort': cohort,
+                'Subcohorts': ', '.join(subcohorts),
+                'N': n,
+                'Cached': cached,
+                'Authorized': cohort in allowed,
             })
 
         self.df1 = pd.DataFrame(rows)
         return self.df1
 
     def cohort(self, cohort1, subcohort=None):
-        """Load the manifest for a cohort (or subcohort) as the current view.
+        """Set the active cohort and return its individual manifest.
+
+        Sets ``self.curr_cohort`` (and ``self.curr_subcohort`` when
+        *subcohort* is given).  The result is also stored as ``self.df2``.
+        Does not contact the network.
 
         Parameters
         ----------
         cohort1 : str or int
-            NSRR dataset slug or integer row index into :meth:`cohorts`.
+            NSRR dataset slug (e.g. ``'cfs'``) or integer row index into
+            the DataFrame returned by :meth:`cohorts`.
         subcohort : str, optional
-            If given, restrict to this subcohort and set it as current.
+            If given, restrict the view to this subcohort (e.g.
+            ``'baseline'``) and record it as the current subcohort.
+            When omitted, all subcohorts are included and
+            ``curr_subcohort`` is cleared.
 
         Returns
         -------
         pandas.DataFrame
-            Columns: ``['Subcohort', 'ID', 'EDF', 'Annot']``.
-            *Annot* contains the first annotation path, or ``'.'``.
+            One row per individual with columns:
+
+            ``Subcohort``
+                Subcohort label for this row.
+            ``ID``
+                Subject identifier (e.g. ``'cfs-visit5-800001'``).
+            ``EDF``
+                Remote path to the EDF file relative to the cohort root.
+            ``Annot``
+                Remote path to the primary annotation file, or ``'.'`` if
+                none is defined.
         """
         if isinstance(cohort1, int):
             cohort1 = self.df1.loc[cohort1, 'Cohort']
@@ -347,10 +631,33 @@ class moonbeam:
     # ------------------------------------------------------------------
 
     def _resolve_iid(self, iid, subcohort):
-        """Return (subcohort, info-dict) for an individual.
+        """Locate an individual in the manifest and return their file info.
 
-        *subcohort* defaults to ``self.curr_subcohort``.  Raises if the ID
-        is ambiguous across subcohorts.
+        *subcohort* falls back to ``self.curr_subcohort`` when not given.
+        Integer *iid* values are resolved against ``self.df2``.
+
+        Parameters
+        ----------
+        iid : str or int
+            Individual ID string or integer row index into ``self.df2``.
+        subcohort : str or None
+            Subcohort to search.  If ``None`` and ``curr_subcohort`` is also
+            unset, all subcohorts are searched.
+
+        Returns
+        -------
+        tuple
+            ``(subcohort, iid, info)`` where *subcohort* is the resolved
+            subcohort label, *iid* is the string ID, and *info* is a dict
+            with keys ``'edf'`` (str) and ``'annots'`` (list of str).
+
+        Raises
+        ------
+        KeyError
+            If *iid* is not found in the specified (or any) subcohort.
+        RuntimeError
+            If *iid* appears in more than one subcohort and no subcohort is
+            specified.
         """
         cohort = self.curr_cohort
         sc = subcohort or self.curr_subcohort
@@ -384,15 +691,32 @@ class moonbeam:
         return sc, iid, info
 
     def pull(self, iid, subcohort=None):
-        """Download EDF and annotation files for one individual (if not cached).
+        """Download EDF and annotation files for one individual.
+
+        Files already present in the cache are skipped.  For compressed EDF
+        files (``.edf.gz`` / ``.edfz``) the companion ``.idx`` index file is
+        downloaded automatically.  Updates ``curr_id``, ``curr_edf``,
+        ``curr_annots``, and ``curr_subcohort``.
+
+        A call to :meth:`cohort` must have been made first to set the active
+        cohort.
 
         Parameters
         ----------
         iid : str or int
-            Individual ID, or integer row index into :meth:`cohort` DataFrame.
+            Individual ID string, or integer row index into ``self.df2``.
         subcohort : str, optional
-            Subcohort label.  Defaults to the current subcohort; required when
-            the same ID appears in more than one subcohort.
+            Subcohort label.  Defaults to ``curr_subcohort``; must be
+            supplied explicitly when the same ID appears in more than one
+            subcohort.
+
+        Raises
+        ------
+        RuntimeError
+            If no cohort has been set, or if *iid* is ambiguous across
+            subcohorts.
+        KeyError
+            If *iid* is not found in the manifest.
         """
         if self._mf is None or self.curr_cohort is None:
             raise RuntimeError("Call cohort() first.")
@@ -416,19 +740,23 @@ class moonbeam:
     def pull_file(self, cohort, remote_path):
         """Download a single file from NSRR into the local cache.
 
-        Skips the download if the file is already present.
+        The file is stored at ``{cdir}/{cohort}/{remote_path}``, mirroring
+        the remote directory structure.  Download progress is shown via a
+        ``tqdm`` progress bar.  If the file is already present on disk the
+        download is silently skipped.
 
         Parameters
         ----------
         cohort : str
             NSRR dataset slug (e.g. ``'cfs'``).
         remote_path : str
-            Path of the file within the dataset (relative to its root).
+            Path of the file within the dataset, relative to the dataset
+            root (e.g. ``'polysomnography/edfs/cfs-visit5-800001.edf'``).
 
         Raises
         ------
         RuntimeError
-            On HTTP error.
+            If the server returns a non-200 HTTP status code.
         """
         from tqdm.auto import tqdm
 
@@ -462,20 +790,30 @@ class moonbeam:
 
     def pull_many(self, iids, subcohort=None, cohort=None,
                   max_workers=_MAX_WORKERS):
-        """Download files for multiple individuals with parallel connections.
+        """Download files for multiple individuals using parallel connections.
 
-        Already-cached files are skipped automatically.
+        Builds a flat list of all EDF, annotation, and (where applicable)
+        ``.idx`` files required by *iids*, then fetches them concurrently
+        using a thread pool.  Files already present in the cache are skipped
+        before a thread is even allocated.  A summary line is printed on
+        completion; individual failures are reported inline and do not abort
+        remaining downloads.
+
+        A call to :meth:`cohort` must have been made first.
 
         Parameters
         ----------
         iids : list of str or int
-            Individual IDs to download.
+            Individual IDs to download.  Integer entries are resolved as row
+            indices into ``self.df2``.
         subcohort : str, optional
-            Subcohort label.  Defaults to the current subcohort.
+            Subcohort label applied to all IDs.  Defaults to
+            ``curr_subcohort``.  IDs that are ambiguous across subcohorts
+            and have no subcohort specified are skipped with a warning.
         cohort : str, optional
-            Dataset slug.  Defaults to the current cohort.
+            Dataset slug.  Defaults to ``curr_cohort``.
         max_workers : int, optional
-            Parallel download threads (default: 4).
+            Maximum number of simultaneous download connections (default: 4).
         """
         if cohort is None:
             cohort = self.curr_cohort
@@ -528,16 +866,26 @@ class moonbeam:
     def inst(self, iid, subcohort=None):
         """Return a Luna instance for one individual, downloading if needed.
 
+        Calls :meth:`pull` to ensure the EDF (and all annotation files) are
+        present in the cache, then creates and returns a fully attached
+        :class:`~lunapi.instance.inst` object.  When multiple annotations
+        are listed in the manifest, only the first is attached; the full
+        list is available via ``self.curr_annots``.
+
+        A call to :meth:`cohort` must have been made first.
+
         Parameters
         ----------
         iid : str or int
-            Individual ID, or integer row index.
+            Individual ID string, or integer row index into ``self.df2``.
         subcohort : str, optional
-            Subcohort label.  Defaults to the current subcohort.
+            Subcohort label.  Defaults to ``curr_subcohort``.
 
         Returns
         -------
         lunapi.instance.inst or None
+            A fully attached instance ready for Luna commands, or ``None``
+            if no cohort has been set.
         """
         if self.curr_cohort is None:
             return None
