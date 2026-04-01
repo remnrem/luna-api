@@ -858,7 +858,7 @@ class inst:
       None
       """
       if remove:
-         self.eval( 'THAW tag=' + f + 'remove' )
+         self.eval( 'THAW tag=' + f + ' remove' )
       else:
          self.eval( 'THAW ' + f )
 
