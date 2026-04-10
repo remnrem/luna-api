@@ -385,7 +385,7 @@ class inst:
       t = pd.DataFrame( self.edf.fetch_annots( anns , interp ) )
       if len( t ) == 0: return t
       t.columns = ['Class', 'Start', 'Stop' ]
-      t = t.sort_values(by=['Start', 'Stop', 'Class'])
+      t = t.sort_values(by=['Start', 'Stop', 'Class']).copy()
       t['Start'] = t['Start'].round(decimals=3)
       t['Stop'] = t['Stop'].round(decimals=3)
       return t
@@ -411,7 +411,7 @@ class inst:
       t = pd.DataFrame( self.edf.fetch_full_annots( anns ) )
       if len( t ) == 0: return t
       t.columns = ['Class', 'Instance','Channel','Meta','Start', 'Stop' ]
-      t = t.sort_values(by=['Start', 'Stop', 'Class','Instance'])
+      t = t.sort_values(by=['Start', 'Stop', 'Class','Instance']).copy()
       t['Start'] = t['Start'].round(decimals=3)
       t['Stop'] = t['Stop'].round(decimals=3)
       return t
