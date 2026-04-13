@@ -936,4 +936,55 @@ class segsrv:
       """
       return self.segsrv.get_evnts_yaxes_ends( ann )
 
+   def set_psd_mode(self, on):
+      """Enable or disable on-the-fly PSD computation inside get_scaled_signal().
+
+      When enabled, each call to get_scaled_signal() also computes and caches
+      a Welch PSD for that channel at native sample rate.
+
+      Parameters
+      ----------
+      on : bool
+          True to enable PSD computation, False to disable.
+      """
+      self.segsrv.set_psd_mode(on)
+
+   def get_psd_mode(self):
+      """Return True if PSD mode is currently enabled."""
+      return self.segsrv.get_psd_mode()
+
+   def get_psd_freqs(self, ch):
+      """Return the cached PSD frequency axis (Hz) for channel ch.
+
+      Must call get_scaled_signal() with PSD mode on first.
+
+      Parameters
+      ----------
+      ch : str
+          Channel name.
+
+      Returns
+      -------
+      array-like
+          Frequency values in Hz.
+      """
+      return self.segsrv.get_psd_freqs(ch)
+
+   def get_psd_power(self, ch):
+      """Return the cached PSD power values for channel ch.
+
+      Must call get_scaled_signal() with PSD mode on first.
+
+      Parameters
+      ----------
+      ch : str
+          Channel name.
+
+      Returns
+      -------
+      array-like
+          Power spectral density values.
+      """
+      return self.segsrv.get_psd_power(ch)
+
 __all__ = ["segsrv", "stgcol", "stgn"]

@@ -248,6 +248,7 @@ PYBIND11_MODULE(lunapi0, m) {
            "Return a list of intervals for selected annotations")
 
       .def("fetch_full_annots", &lunapi_inst_t::fetch_full_annots,
+           py::arg("anns"), py::arg("add_keys") = false,
            "Return a list of intervals and meta-data for selected annotations")
 
       .def("has_annots", &lunapi_inst_t::has_annots,
@@ -506,5 +507,16 @@ PYBIND11_MODULE(lunapi0, m) {
       .def("fetch_annots", &segsrv_t::fetch_evts)
 
       .def("fetch_all_annots_with_inst_ids",
-           &segsrv_t::fetch_all_evts_with_inst_ids);
+           &segsrv_t::fetch_all_evts_with_inst_ids)
+
+      .def("set_psd_mode",  &segsrv_t::set_psd_mode,
+           "Enable/disable on-the-fly PSD computation inside get_scaled_signal()", "on"_a)
+
+      .def("get_psd_mode",  &segsrv_t::get_psd_mode)
+
+      .def("get_psd_freqs", &segsrv_t::get_psd_freqs,
+           "Return cached PSD frequency axis (Hz) for channel ch", "ch"_a)
+
+      .def("get_psd_power", &segsrv_t::get_psd_power,
+           "Return cached PSD power values for channel ch", "ch"_a);
 }

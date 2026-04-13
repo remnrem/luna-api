@@ -392,13 +392,16 @@ class inst:
 
    #------------------------------------------------------------------------
 
-   def fetch_fulls_annots( self , anns ):
+   def fetch_fulls_annots( self , anns , add_keys = False ):
       """Return annotation events including instance ID, channel, and metadata.
 
       Parameters
       ----------
       anns : str or list of str
           Annotation class name(s) to retrieve.
+      add_keys : bool, default False
+          If True, return metadata as ``key=value;key2=value2`` instead of the
+          legacy value-only ``v1|v2`` format.
 
       Returns
       -------
@@ -408,7 +411,7 @@ class inst:
           sorted by start time.  Times are in seconds.
       """
       if type( anns ) is not list: anns = [ anns ]
-      t = pd.DataFrame( self.edf.fetch_full_annots( anns ) )
+      t = pd.DataFrame( self.edf.fetch_full_annots( anns , add_keys ) )
       if len( t ) == 0: return t
       t.columns = ['Class', 'Instance','Channel','Meta','Start', 'Stop' ]
       t = t.sort_values(by=['Start', 'Stop', 'Class','Instance']).copy()
