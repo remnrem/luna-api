@@ -171,6 +171,7 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  pops/post-soap.cpp \
 			  pops/spec.cpp \
 			  resp/hb.cpp \
+			  resp/desat.cpp \
 			  spectral/irasa.cpp \
 			  spectral/mtm/adwait.cpp \
 			  spectral/mtm/hires.cpp \
