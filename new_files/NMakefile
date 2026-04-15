@@ -216,6 +216,7 @@ CPP_SOURCES = annot/align-annots.cpp \
 			  tests/tests.cpp \
 			  timeline/actig.cpp \
 			  timeline/s2c.cpp \
+			  timeline/ralign.cpp \
 			  timeline/cache.cpp \
 			  timeline/chep.cpp \
 			  timeline/epoch-annots.cpp \
