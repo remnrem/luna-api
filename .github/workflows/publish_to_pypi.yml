@@ -33,8 +33,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            job_name: "Ubuntu AMD64 Build"
+          # Linux binary wheels are temporarily disabled.
+          # - os: ubuntu-latest
+          #   job_name: "Ubuntu AMD64 Build"
           - os: macos-15
             job_name: "MacOS 15 ARM64 Build"
           - os: macos-15-intel
@@ -119,16 +120,17 @@ jobs:
         uses: pypa/cibuildwheel@v3.4.0
         env:
           CIBW_ARCHS_MACOS: "native"     # macos-15-intel => x86_64, macos-15 => arm64
-          CIBW_ARCHS_LINUX: "x86_64"
+          # Linux binary wheels are temporarily disabled.
+          # CIBW_ARCHS_LINUX: "x86_64"
           # Persist native-deps cache generated inside Linux build containers
           # back to the host workspace for actions/cache save/restore.
-          CIBW_CONTAINER_ENGINE: "docker; create_args: --volume ${{ env.DEPENDS_CACHE_DIR }}:/project/depends-cache/${{ matrix.os }}"
+          # CIBW_CONTAINER_ENGINE: "docker; create_args: --volume ${{ env.DEPENDS_CACHE_DIR }}:/project/depends-cache/${{ matrix.os }}"
 
           # Avoid slow ninja build-from-source
           CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel 'ninja==1.11.1.1'"
           CIBW_ENVIRONMENT: "PIP_ONLY_BINARY=ninja DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }}"
 
-          CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }} sh build-linux.sh"
+          # CIBW_BEFORE_ALL_LINUX: "DEPENDS_CACHE_DIR=/project/depends-cache/${{ matrix.os }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }} sh build-linux.sh"
           CIBW_BEFORE_ALL_MACOS: "DEPENDS_CACHE_DIR=${{ env.DEPENDS_CACHE_DIR }} NATIVE_DEPS_MODE=${{ steps.native_mode.outputs.effective }} sh build-macos.sh"
           CIBW_BEFORE_ALL_WINDOWS: " "
 
@@ -137,7 +139,7 @@ jobs:
 
           # Python versions
           CIBW_BUILD: "cp39-* cp310-* cp311-* cp312-* cp313-* cp314-*"
-          CIBW_SKIP: "*-musllinux_*"
+          # CIBW_SKIP: "*-musllinux_*"
 
         with:
           output-dir: wheelhouse
