@@ -374,6 +374,36 @@ PYBIND11_MODULE(lunapi0, m) {
       });
 
   //
+  // annot_edit_t : single queued annotation edit
+  //
+  // Identity fields (aclass, inst_id, start_tp, stop_tp, ch_str) come
+  // directly from fetch_all_annots_with_inst_ids() cols 0, 6, 4, 5, 7.
+  // All action fields are optional; unset optionals remain None in Python.
+  // del_ takes precedence over all other fields.
+  // If new_start is set but new_stop is not, the interval is shifted
+  // (duration preserved).
+
+  py::class_<annot_edit_t>(m, "annot_edit")
+
+      .def(py::init<>())
+
+      // identity
+      .def_readwrite("aclass",     &annot_edit_t::aclass)
+      .def_readwrite("inst_id",    &annot_edit_t::inst_id)
+      .def_readwrite("start_tp",   &annot_edit_t::start_tp)
+      .def_readwrite("stop_tp",    &annot_edit_t::stop_tp)
+      .def_readwrite("ch_str",     &annot_edit_t::ch_str)
+
+      // actions  (del is a Python keyword, exposed as del_)
+      .def_readwrite("del_",       &annot_edit_t::del)
+      .def_readwrite("new_start",  &annot_edit_t::new_start)  // optional[int] or None
+      .def_readwrite("new_stop",   &annot_edit_t::new_stop)   // optional[int] or None
+      .def_readwrite("new_ch",      &annot_edit_t::new_ch)      // optional[str] or None
+      .def_readwrite("new_inst_id", &annot_edit_t::new_inst_id) // optional[str] or None
+      .def_readwrite("clear_meta",  &annot_edit_t::clear_meta)
+      .def_readwrite("meta",       &annot_edit_t::meta);      // dict[str, str]
+
+  //
   // segsrv_t : segment-server instance (linked to a single lunapi_inst_t)
   //
   // This class is intentionally exposed with low transformation overhead:
@@ -508,6 +538,16 @@ PYBIND11_MODULE(lunapi0, m) {
 
       .def("fetch_all_annots_with_inst_ids",
            &segsrv_t::fetch_all_evts_with_inst_ids)
+
+      .def("queue_edit",         &segsrv_t::queue_edit,
+           "Queue an annot_edit for later application", "edit"_a)
+
+      .def("clear_edits",        &segsrv_t::clear_edits,
+           "Discard all queued annotation edits")
+
+      .def("apply_annot_edits",  &segsrv_t::apply_annot_edits,
+           "Apply all queued edits; returns count of instances changed/deleted",
+           "classes"_a = std::vector<std::string>{})
 
       .def("set_psd_mode",  &segsrv_t::set_psd_mode,
            "Enable/disable on-the-fly PSD computation inside get_scaled_signal()", "on"_a)

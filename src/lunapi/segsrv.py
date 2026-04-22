@@ -804,23 +804,36 @@ class segsrv:
       """
       return self.segsrv.fetch_all_annots(anns, hms )
 
-   def get_all_annots_with_inst_ids(self,anns,hms = True ):
-      """Return all annotation events including instance IDs.
+   def get_all_annots_with_inst_ids(self, anns, hms=False):
+      """Return all annotation events with instance IDs and exact timepoints.
 
       Parameters
       ----------
       anns : str or list of str
           Annotation class name(s) to retrieve.
       hms : bool, optional
-          If ``True``, return times as ``'HH:MM:SS'`` strings.
-          Default ``True``.
+          If ``True``, include an ``'HH:MM:SS'`` clock-time column.
+          Default ``False``.
 
       Returns
       -------
-      list
-          Events including class, instance ID, start, and stop.
+      list of list of str
+          Each row contains (hms=False)::
+
+              [class, meta, start_sec, stop_sec, start_tp, stop_tp, inst_id, ch_str]
+                 0      1      2          3          4          5       6        7
+
+          or (hms=True)::
+
+              [class, meta, hms, start_sec, duration, start_tp, stop_tp, inst_id, ch_str]
+                 0      1    2      3          4         5          6       7        8
+
+          ``start_tp`` and ``stop_tp`` are exact uint64_t timepoint values
+          as strings; pass them (as ``int(row[4])``, ``int(row[5])``) to
+          :meth:`delete_annot` or :meth:`edit_annot` for lossless round-trips.
       """
-      return self.segsrv.fetch_all_annots_with_inst_ids(anns, hms )
+      if type(anns) is not list: anns = [anns]
+      return self.segsrv.fetch_all_annots_with_inst_ids(anns, hms)
 
    def compile_windowed_annots(self,anns):
       """Pre-compile annotation classes into window-ready polygon caches.
@@ -935,6 +948,119 @@ class segsrv:
           End-cap y-coordinate arrays for the current window.
       """
       return self.segsrv.get_evnts_yaxes_ends( ann )
+
+   # -----------------------------------------------------------------------
+   # Annotation editing
+   # -----------------------------------------------------------------------
+
+   def delete_annot(self, aclass, inst_id, start_tp, stop_tp, ch_str=""):
+      """Queue deletion of a single annotation instance.
+
+      The deletion is not applied until :meth:`apply_annot_edits` is called.
+
+      Parameters
+      ----------
+      aclass : str
+          Annotation class name (col 0 from :meth:`get_all_annots_with_inst_ids`).
+      inst_id : str
+          Instance ID string (col 6).
+      start_tp : int
+          Exact start timepoint in tp units (col 4, cast to ``int``).
+      stop_tp : int
+          Exact stop timepoint in tp units (col 5, cast to ``int``).
+      ch_str : str, optional
+          Channel string (col 7).  Default ``""``.
+      """
+      e = _luna.annot_edit()
+      e.aclass    = aclass
+      e.inst_id   = inst_id
+      e.start_tp  = int(start_tp)
+      e.stop_tp   = int(stop_tp)
+      e.ch_str    = ch_str
+      e.del_      = True
+      self.segsrv.queue_edit(e)
+
+   def edit_annot(self, aclass, inst_id, start_tp, stop_tp, ch_str="",
+                  new_start=None, new_stop=None, new_ch=None, new_inst_id=None,
+                  clear_meta=False, meta=None):
+      """Queue a modification of a single annotation instance.
+
+      Any combination of action parameters may be supplied; unset ones
+      leave the original value unchanged.  The edit is not applied until
+      :meth:`apply_annot_edits` is called.  *aclass* is the only immutable
+      field; all others including *inst_id* can be changed.
+
+      Parameters
+      ----------
+      aclass : str
+          Annotation class name (immutable).
+      inst_id : str
+          Instance ID string (current value, used to locate the instance).
+      start_tp : int
+          Exact start timepoint in tp units (from :meth:`get_all_annots_with_inst_ids`).
+      stop_tp : int
+          Exact stop timepoint in tp units.
+      ch_str : str, optional
+          Channel string.  Default ``""``.
+      new_start : int, optional
+          New start timepoint (tp units).  If set without *new_stop*, the
+          interval is shifted preserving its original duration.
+      new_stop : int, optional
+          New stop timepoint (tp units).
+      new_ch : str, optional
+          New channel string.
+      new_inst_id : str, optional
+          New instance ID.
+      clear_meta : bool, optional
+          If ``True``, wipe all existing metadata before applying *meta*
+          updates.  Default ``False``.
+      meta : dict, optional
+          ``{key: value}`` string pairs to set or override on the instance.
+      """
+      e = _luna.annot_edit()
+      e.aclass     = aclass
+      e.inst_id    = inst_id
+      e.start_tp   = int(start_tp)
+      e.stop_tp    = int(stop_tp)
+      e.ch_str     = ch_str
+      if new_start   is not None: e.new_start   = int(new_start)
+      if new_stop    is not None: e.new_stop    = int(new_stop)
+      if new_ch      is not None: e.new_ch      = str(new_ch)
+      if new_inst_id is not None: e.new_inst_id = str(new_inst_id)
+      e.clear_meta = clear_meta
+      if meta        is not None: e.meta        = {str(k): str(v) for k, v in meta.items()}
+      self.segsrv.queue_edit(e)
+
+   def apply_annot_edits(self, classes=None):
+      """Apply all queued annotation edits and refresh the display cache.
+
+      After applying, the queue is cleared automatically.
+
+      Parameters
+      ----------
+      classes : str or list of str, optional
+          Restrict application to these annotation class names.  Pass
+          ``None`` (default) to apply to all classes that have queued edits.
+
+      Returns
+      -------
+      int
+          Number of instances changed or deleted.
+      """
+      if classes is None:
+         classes = []
+      elif type(classes) is str:
+         classes = [classes]
+      return self.segsrv.apply_annot_edits(classes)
+
+   def clear_annot_edits(self):
+      """Discard all queued annotation edits without applying them.
+
+      Returns
+      -------
+      None
+      """
+      self.segsrv.clear_edits()
 
    def set_psd_mode(self, on):
       """Enable or disable on-the-fly PSD computation inside get_scaled_signal().
