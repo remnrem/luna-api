@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "pybind11"]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.11"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -8,6 +8,7 @@ version = "1.5.2"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9,<3.15"
+license = {file = "LICENSE"}
 
 dependencies = [
   "pandas>=2.2,<3",
@@ -38,10 +39,12 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Topic :: Scientific/Engineering",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Framework :: Jupyter :: JupyterLab",
   "Natural Language :: English",
-  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -54,5 +57,6 @@ classifiers = [
 skip = "pp*"
 
 [project.urls]
-"www" = "https://zzz.nyspi.org/luna"
-"github" = "http://github.com/remnrem/luna-api"
+Homepage = "https://zzz.nyspi.org/luna/"
+Documentation = "https://zzz.nyspi.org/luna/"
+Repository = "https://github.com/remnrem/luna-api"
