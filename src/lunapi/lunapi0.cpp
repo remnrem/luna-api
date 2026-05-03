@@ -66,6 +66,46 @@ PYBIND11_MODULE(lunapi0, m) {
   m.def("fetch_desc_var", &lunapi_t::fetch_desc_var,
         "Description for a command/table/variable");
 
+  py::class_<waveform_block_t>(m, "waveform_block")
+      .def(py::init<>())
+      .def_readwrite("label", &waveform_block_t::label)
+      .def_readwrite("unit", &waveform_block_t::unit)
+      .def_readwrite("sr", &waveform_block_t::sr)
+      .def_readwrite("data_start_sec", &waveform_block_t::data_start_sec)
+      .def_readwrite("data_stop_sec", &waveform_block_t::data_stop_sec)
+      .def_readwrite("rel_time", &waveform_block_t::rel_time)
+      .def_readwrite("values", &waveform_block_t::values)
+      .def_readwrite("feature_qc", &waveform_block_t::feature_qc)
+      .def_readwrite("features", &waveform_block_t::features);
+
+  py::class_<waveform_event_t>(m, "waveform_event")
+      .def(py::init<>())
+      .def_readwrite("annot", &waveform_event_t::annot)
+      .def_readwrite("instance", &waveform_event_t::instance)
+      .def_readwrite("annot_ch", &waveform_event_t::annot_ch)
+      .def_readwrite("meta", &waveform_event_t::meta)
+      .def_readwrite("annot_start_sec", &waveform_event_t::annot_start_sec)
+      .def_readwrite("annot_stop_sec", &waveform_event_t::annot_stop_sec)
+      .def_readwrite("anchor_sec", &waveform_event_t::anchor_sec)
+      .def_readwrite("wave_start_sec", &waveform_event_t::wave_start_sec)
+      .def_readwrite("wave_stop_sec", &waveform_event_t::wave_stop_sec)
+      .def_readwrite("blocks", &waveform_event_t::blocks);
+
+  py::class_<waveform_extract_result_t>(m, "waveform_extract_result")
+      .def(py::init<>())
+      .def_readwrite("requested_annots", &waveform_extract_result_t::requested_annots)
+      .def_readwrite("requested_channels", &waveform_extract_result_t::requested_channels)
+      .def_readwrite("feature_names", &waveform_extract_result_t::feature_names)
+      .def_readwrite("events", &waveform_extract_result_t::events)
+      .def_readwrite("dropped", &waveform_extract_result_t::dropped)
+      .def_readwrite("align", &waveform_extract_result_t::align)
+      .def_readwrite("mode", &waveform_extract_result_t::mode)
+      .def_readwrite("pre_secs", &waveform_extract_result_t::pre_secs)
+      .def_readwrite("post_secs", &waveform_extract_result_t::post_secs)
+      .def_readwrite("flank_left_secs", &waveform_extract_result_t::flank_left_secs)
+      .def_readwrite("flank_right_secs", &waveform_extract_result_t::flank_right_secs)
+      .def_readwrite("total_events", &waveform_extract_result_t::total_events);
+
   //
   // lunapi_t engine class
   //
@@ -205,7 +245,34 @@ PYBIND11_MODULE(lunapi0, m) {
 
       .def("tables", py::overload_cast<>(&lunapi_t::results, py::const_),
            "Return a result table (defined by a command/strata pair) from a "
-           "prior eval()");
+           "prior eval()")
+
+      .def("run_gpa",
+           &lunapi_t::run_gpa,
+           "Run --gpa-prep (prep_mode=True) or --gpa (prep_mode=False) without "
+           "an EDF context.  opts is a dict[str,str] of Luna parameter names to "
+           "values; use empty string for flag-only params (e.g. {'manifest':''}).  "
+           "Returns (rtables_return_t, stdout_str) where stdout_str contains any "
+           "tab-delimited manifest/dump text written by the GPA internals.")
+
+      .def("gpa_has_cache",
+           &lunapi_t::gpa_has_cache,
+           "True if a GPA analysis matrix is cached from the most recent gpa_run().")
+
+      .def("gpa_clear_cache",
+           &lunapi_t::gpa_clear_cache,
+           "Release the cached GPA matrix to free memory.")
+
+      .def("gpa_get_xy",
+           &lunapi_t::gpa_get_xy,
+           "Return (ids, x_vals, y_vals) from the cached GPA matrix for the given "
+           "pair of variable names, excluding rows where either value is NaN.")
+
+      .def("gpa_get_xy_partial",
+           &lunapi_t::gpa_get_xy_partial,
+           "Return (ids, x_resid, y_resid) from the cached GPA matrix after "
+           "projecting out the Z covariates (plus intercept) from both X and Y. "
+           "Excludes rows where X, Y, or any Z is NaN.");
 
   //
   // lunapi_inst_t : individual instance (EDF/annotation pair)
@@ -250,6 +317,49 @@ PYBIND11_MODULE(lunapi0, m) {
       .def("fetch_full_annots", &lunapi_inst_t::fetch_full_annots,
            py::arg("anns"), py::arg("add_keys") = false,
            "Return a list of intervals and meta-data for selected annotations")
+
+      .def(
+          "extract_event_waveforms",
+          [](const lunapi_inst_t &self, const std::vector<std::string> &annots,
+             const std::vector<std::string> &chs, double pre_secs,
+             double post_secs, const std::string &align,
+             const std::string &require) {
+            py::gil_scoped_release r;
+            return self.extract_event_waveforms(
+                annots, chs, pre_secs, post_secs, align, require);
+          },
+          py::arg("annots"), py::arg("chs"), py::arg("pre_secs"),
+          py::arg("post_secs"), py::arg("align") = "mid",
+          py::arg("require") = "full",
+          "Extract fixed event-locked waveform windows without holding the GIL")
+
+      .def(
+          "compute_waveform_features",
+          [](const lunapi_inst_t &self, const waveform_extract_result_t &input,
+             bool catch24, bool basic_stats) {
+            py::gil_scoped_release r;
+            return self.compute_waveform_features(input, catch24, basic_stats);
+          },
+          py::arg("input"), py::arg("catch24") = false,
+          py::arg("basic_stats") = true,
+          "Compute waveform features without holding the GIL")
+
+      .def(
+          "extract_event_waveforms_with_features",
+          [](const lunapi_inst_t &self, const std::vector<std::string> &annots,
+             const std::vector<std::string> &chs, double pre_secs,
+             double post_secs, const std::string &align,
+             const std::string &require, bool catch24, bool basic_stats) {
+            py::gil_scoped_release r;
+            return self.extract_event_waveforms_with_features(
+                annots, chs, pre_secs, post_secs, align, require, catch24,
+                basic_stats);
+          },
+          py::arg("annots"), py::arg("chs"), py::arg("pre_secs"),
+          py::arg("post_secs"), py::arg("align") = "mid",
+          py::arg("require") = "full", py::arg("catch24") = false,
+          py::arg("basic_stats") = true,
+          "Extract waveform windows and compute features without holding the GIL")
 
       .def("has_annots", &lunapi_inst_t::has_annots,
            "Return boolean for whether annotations exist (with aliasing)")

@@ -14,3 +14,4 @@ from .segsrv import *
 from .viz import *
 from .moonbeam import *
 from .resources import *
+from .gpa import gpa_prep, gpa_manifest, gpa_run, gpa_dump, gpa_get_xy, gpa_get_xy_partial, gpa_clear_cache

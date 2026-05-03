@@ -12,6 +12,6 @@ lunapi.lunapi1
     visualization helpers.
 """
 
-__version__ = "1.5.2"
+__version__ = "1.5.5"
 
 from lunapi.lunapi1 import *

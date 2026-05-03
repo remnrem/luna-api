@@ -421,6 +421,98 @@ class inst:
 
    #------------------------------------------------------------------------
 
+   def _waveform_result_to_dict(self, result):
+      """Convert a low-level waveform result object into plain Python data."""
+      events = []
+      for ev in result.events:
+         blocks = {}
+         for block in ev.blocks:
+            blocks[str(block.label)] = {
+               "label": str(block.label),
+               "unit": str(block.unit),
+               "sr": int(block.sr),
+               "data_start_sec": float(block.data_start_sec),
+               "data_stop_sec": float(block.data_stop_sec),
+               "rel_time": np.asarray(block.rel_time, dtype=float),
+               "values": np.asarray(block.values, dtype=float),
+               "feature_qc": int(block.feature_qc),
+               "features": dict(block.features),
+            }
+         events.append(
+            {
+               "annot": str(ev.annot),
+               "instance": str(ev.instance),
+               "annot_ch": str(ev.annot_ch),
+               "meta": str(ev.meta),
+               "annot_start_sec": float(ev.annot_start_sec),
+               "annot_stop_sec": float(ev.annot_stop_sec),
+               "anchor_sec": float(ev.anchor_sec),
+               "wave_start_sec": float(ev.wave_start_sec),
+               "wave_stop_sec": float(ev.wave_stop_sec),
+               "blocks": blocks,
+            }
+         )
+
+      return {
+         "requested_annots": list(result.requested_annots),
+         "requested_channels": list(result.requested_channels),
+         "feature_names": list(result.feature_names),
+         "events": events,
+         "dropped": dict(result.dropped),
+         "align": str(result.align),
+         "mode": str(result.mode),
+         "pre_secs": float(result.pre_secs),
+         "post_secs": float(result.post_secs),
+         "flank_left_secs": float(result.flank_left_secs),
+         "flank_right_secs": float(result.flank_right_secs),
+         "total_events": int(result.total_events),
+      }
+
+   #------------------------------------------------------------------------
+
+   def extract_event_waveforms(self, annots, chs, pre_secs, post_secs,
+                               align="mid", require="full"):
+      """Extract fixed-width event-locked waveforms around annotations."""
+      if isinstance(annots, str):
+         annots = [annots]
+      if isinstance(chs, str):
+         chs = [chs]
+      result = self.edf.extract_event_waveforms(
+         list(annots), list(chs), float(pre_secs), float(post_secs), align, require
+      )
+      return self._waveform_result_to_dict(result)
+
+   #------------------------------------------------------------------------
+
+   def compute_waveform_features(self, waveforms, catch24=False, basic_stats=True):
+      """Compute waveform features on a previously extracted waveform result."""
+      if hasattr(waveforms, "events"):
+         result = waveforms
+      else:
+         raise TypeError("compute_waveform_features expects a low-level waveform result object")
+      out = self.edf.compute_waveform_features(
+         result, bool(catch24), bool(basic_stats)
+      )
+      return self._waveform_result_to_dict(out)
+
+   #------------------------------------------------------------------------
+
+   def extract_event_waveforms_with_features(self, annots, chs, pre_secs, post_secs,
+                                             align="mid", require="full",
+                                             catch24=False, basic_stats=True):
+      """Extract event-locked waveforms and compute features in one call."""
+      if isinstance(annots, str):
+         annots = [annots]
+      if isinstance(chs, str):
+         chs = [chs]
+      result = self.edf.extract_event_waveforms_with_features(
+         list(annots), list(chs), float(pre_secs), float(post_secs),
+         align, require, bool(catch24), bool(basic_stats)
+      )
+      return self._waveform_result_to_dict(result)
+
+   #------------------------------------------------------------------------
+
    def eval( self, cmdstr ):
       """Evaluate one or more Luna commands and store results internally.
 
