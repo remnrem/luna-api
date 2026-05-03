@@ -126,6 +126,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      edfz/bgzf.cpp \
 	      edfz/edfz.cpp \
 	      edfz/edfz2.cpp \
+	      dumper/waveform.cpp \
 	      eval.cpp \
 	      fftw/bandaid.cpp \
 	      fftw/cohfft.cpp \
