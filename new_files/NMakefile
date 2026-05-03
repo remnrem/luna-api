@@ -144,6 +144,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      ica/ica.cpp \
 	      intervals/intervals.cpp \
 	      lgbm/lgbm.cpp \
+	      lunapi/waveforms.cpp \
 	      lunapi/lunapi.cpp \
 	      lunapi/rtables.cpp \
 	      lunapi/segsrv.cpp \
@@ -158,6 +159,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      pdc/pdc.cpp \
 	      pdc/pdcfuncs.cpp \
 	      pdc/sss.cpp \
+	      pops/coda.cpp \
 	      pops/espriors.cpp \
 	      pops/hypnodensity.cpp \
 	      pops/hdstats.cpp \
