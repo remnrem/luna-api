@@ -53,6 +53,15 @@ classifiers = [
   "Programming Language :: Python :: 3.14"
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=7",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
 [tool.cibuildwheel]
 skip = "pp*"
 
