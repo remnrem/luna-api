@@ -157,18 +157,60 @@ def hypno( ss , e = None , xsize = 20 , ysize = 2 , title = None ):
         The hypnogram is rendered inline via Matplotlib.
     """
     import matplotlib.pyplot as plt
-    ssn = stgn( ss )
-    if e is None: e = np.arange(0, len(ssn), 1)
-    e = e/120
-    plt.figure(figsize=(xsize , ysize ))
-    plt.plot( e , ssn , c = 'gray' , lw = 0.5 )
-    plt.scatter( e , ssn , c = stgcol( ss ) , zorder=2.5 , s = 10 )
-    plt.ylabel('Sleep stage')
-    plt.xlabel('Time (hrs)')
-    plt.ylim(-3.5, 2.5)
-    plt.xlim(0,max(e))
-    plt.yticks([-3,-2,-1,0,1,2] , ['N3','N2','N1','R','W','?'] )
-    if ( title != None ): plt.title( title )
+    import matplotlib.colors as mcolors
+    ssn = np.array(stgn( ss ), dtype=float)
+    if e is None: e = np.arange(0, len(ssn), 1, dtype=float)
+    e = e / 120.0
+    fig, ax = plt.subplots(figsize=(xsize, ysize))
+
+    # Detect background brightness for adaptive guide-line colour
+    try:
+        bg_rgb = mcolors.to_rgb(ax.get_facecolor())
+        lum = 0.299*bg_rgb[0] + 0.587*bg_rgb[1] + 0.114*bg_rgb[2]
+        dark_bg = lum < 0.3
+    except Exception:
+        dark_bg = False
+
+    guide_col  = '#4a4a4a' if dark_bg else '#d0d0d0'
+    back_col   = '#888888' if dark_bg else '#b8b8b8'
+    vtrans_col = '#5c5c5c' if dark_bg else '#aaaaaa'
+
+    # Five guide lines — one per stage, aligned with the actual hypnogram track
+    for y in [-3, -2, -1, 0, 1]:
+        ax.axhline(y, color=guide_col, linewidth=0.5, zorder=1)
+
+    n = len(e)
+    ep_dur = float(e[1] - e[0]) if n > 1 else 1.0 / 120.0
+    colors = stgcol(ss)
+
+    # Backline: wide neutral step drawn first so dark stages stay visible
+    for i in range(n):
+        y = ssn[i]
+        if np.isfinite(y):
+            ax.plot([e[i], e[i] + ep_dur], [y, y],
+                    color=back_col, linewidth=9.0, solid_capstyle='butt', zorder=2)
+
+    # Coloured stage segments on top
+    for i in range(n):
+        y = ssn[i]
+        if np.isfinite(y):
+            ax.plot([e[i], e[i] + ep_dur], [y, y],
+                    color=colors[i], linewidth=5.5, solid_capstyle='butt', zorder=3)
+
+    # Vertical transitions
+    for i in range(n - 1):
+        y0, y1 = ssn[i], ssn[i + 1]
+        if np.isfinite(y0) and np.isfinite(y1) and y0 != y1:
+            ax.plot([e[i] + ep_dur, e[i] + ep_dur], [y0, y1],
+                    color=vtrans_col, linewidth=1.0, zorder=2)
+
+    ax.set_ylabel('Sleep stage')
+    ax.set_xlabel('Time (hrs)')
+    ax.set_ylim(-3.5, 2.5)
+    ax.set_xlim(0, float(np.nanmax(e)) + ep_dur)
+    ax.set_yticks([-3, -2, -1, 0, 1, 2], labels=['N3','N2','N1','R','W','?'])
+    if title is not None:
+        ax.set_title(title)
     plt.show()
 
 # --------------------------------------------------------------------------------
