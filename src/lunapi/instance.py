@@ -430,7 +430,8 @@ class inst:
             blocks[str(block.label)] = {
                "label": str(block.label),
                "unit": str(block.unit),
-               "sr": int(block.sr),
+               "sr": float(block.sr),
+               "sample_step_tp": int(block.sample_step_tp),
                "data_start_sec": float(block.data_start_sec),
                "data_stop_sec": float(block.data_stop_sec),
                "rel_time": np.asarray(block.rel_time, dtype=float),

@@ -71,6 +71,7 @@ PYBIND11_MODULE(lunapi0, m) {
       .def_readwrite("label", &waveform_block_t::label)
       .def_readwrite("unit", &waveform_block_t::unit)
       .def_readwrite("sr", &waveform_block_t::sr)
+      .def_readwrite("sample_step_tp", &waveform_block_t::sample_step_tp)
       .def_readwrite("data_start_sec", &waveform_block_t::data_start_sec)
       .def_readwrite("data_stop_sec", &waveform_block_t::data_stop_sec)
       .def_readwrite("rel_time", &waveform_block_t::rel_time)
