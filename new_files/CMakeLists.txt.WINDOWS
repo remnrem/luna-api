@@ -37,5 +37,5 @@ install(FILES
     ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3-3.dll
     ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3f-3.dll
     ${CMAKE_SOURCE_DIR}/depends/fftw-3.3.5-dll64/libfftw3l-3.dll
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lunapi
+    DESTINATION lunapi
 )
