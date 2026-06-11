@@ -53,6 +53,73 @@ def _join(v: Union[str, List[str], None]) -> Optional[str]:
     return ",".join(v) if isinstance(v, (list, tuple)) else str(v)
 
 
+def _ensure_lf(path: str) -> tuple[str, bool]:
+    """Normalize CR/CRLF→LF and strip trailing tabs from each line.
+
+    Returns (path, created_temp). Creates a temp copy only if the file
+    actually needed changes; otherwise returns the original path unchanged.
+    """
+    with open(path, "rb") as fh:
+        data = fh.read()
+    normalized = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    lines = normalized.split(b"\n")
+    if lines:
+        ncols = len(lines[0].split(b"\t"))
+        for idx in range(1, len(lines)):
+            if not lines[idx]:
+                continue
+            fields = lines[idx].split(b"\t")
+            # Strip trailing empty fields that exceed the header column count
+            while len(fields) > ncols and fields[-1] == b"":
+                fields.pop()
+            # Replace remaining empty fields with "." so the C++ parser accepts them
+            fields = [f if f else b"." for f in fields]
+            lines[idx] = b"\t".join(fields)
+        normalized = b"\n".join(lines)
+    if normalized == data:
+        return path, False
+    fd, tmp = tempfile.mkstemp(suffix=".tsv")
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(normalized)
+    except Exception:
+        os.unlink(tmp)
+        raise
+    return tmp, True
+
+
+def _validate_tsv(path: str, display_name: Optional[str] = None) -> None:
+    """Pre-validate a tab-delimited file before passing it to the C++ engine.
+
+    Raises ValueError identifying the file, row number, and column counts so
+    the user gets an actionable message instead of a cryptic C++ RuntimeError.
+    display_name overrides the filename shown in error messages (use the
+    original path when validating a normalized temp copy).
+    """
+    label = os.path.basename(display_name or path)
+    with open(path, "rb") as fh:
+        raw = fh.read()
+
+    lines = raw.split(b"\n")
+    while lines and not lines[-1].strip():
+        lines.pop()
+
+    if not lines:
+        raise ValueError(f"{label!r} is empty")
+
+    expected = len(lines[0].split(b"\t"))
+    for i, line in enumerate(lines[1:], start=2):
+        if not line.strip():
+            continue
+        n = len(line.split(b"\t"))
+        if n != expected:
+            preview = repr(line[:120])
+            raise ValueError(
+                f"{label!r}: row {i} has {n} tab-delimited columns but the "
+                f"header has {expected}\n  line content: {preview}"
+            )
+
+
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
@@ -92,11 +159,23 @@ def gpa_prep(
     opts: Dict[str, str] = {"dat": dat_path}
 
     tmp_path: Optional[str] = None
+    lf_tmps: List[str] = []
     if specs is not None:
+        normalized: List[dict] = []
+        for entry in specs:
+            if "file" in entry:
+                orig = entry["file"]
+                lf_path, created = _ensure_lf(orig)
+                if created:
+                    lf_tmps.append(lf_path)
+                    entry = {**entry, "file": lf_path}
+                _validate_tsv(entry["file"], display_name=orig)
+            normalized.append(entry)
+
         fd, tmp_path = tempfile.mkstemp(suffix=".json")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                json.dump({"inputs": specs}, fh, indent=2)
+                json.dump({"inputs": normalized}, fh, indent=2)
         except Exception:
             os.unlink(tmp_path)
             raise
@@ -106,7 +185,20 @@ def gpa_prep(
 
     try:
         _, stdout = _engine().run_gpa(opts, True)
+    except RuntimeError as exc:
+        # Attach the specs file list so the error is traceable even when the
+        # C++ message doesn't include a filename.
+        files = [e["file"] for e in (specs or []) if "file" in e]
+        context = ", ".join(os.path.basename(f) for f in files)
+        raise RuntimeError(
+            f"{exc}" + (f" (files: {context})" if context else "")
+        ) from exc
     finally:
+        for p in lf_tmps:
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
         if tmp_path is not None:
             try:
                 os.unlink(tmp_path)
