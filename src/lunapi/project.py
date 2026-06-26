@@ -13,6 +13,7 @@ except ImportError:
     _ipy_display = None
 
 from .resources import resources, lp_version
+from .parallel import coerce_strata as _coerce_strata
 from .results import tables, cmdfile
 
 
@@ -190,7 +191,7 @@ class proj:
       -------
       None
       """
-      proj.eng.reinit()
+      self.eng.reinit()
 
    #------------------------------------------------------------------------
 
@@ -632,8 +633,118 @@ class proj:
           Mapping of ``"COMMAND: STRATA"`` keys to ``pandas.DataFrame``
           result tables.
       """
-      r = proj.eng.eval(cmdstr)
-      return tables( r )
+      from .parallel import ProcResult, _errors_frame, _stdout_frame, _records_frame
+      proj.eng.eval(cmdstr)
+      return ProcResult(
+         _owner=self,
+         errors=_errors_frame([]),
+         stdout=_stdout_frame([]),
+         records=_records_frame([]),
+         workers=1,
+      )
+
+   #------------------------------------------------------------------------
+
+   def proc_parallel(self, cmdstr, workers=None, batch_size=None, params=None,
+                     param_file=None, strict=False, progress=True,
+                     out_db=None, out_text=None, in_memory=None,
+                     n1=None, n2=None, ids=None, skip=None):
+      """Evaluate Luna commands across the sample list using worker processes.
+
+      This is intended for file-backed project sample lists.  Each worker
+      process initializes its own Luna engine and receives only the explicit
+      parameters passed via *params* or *param_file*; project variables from
+      the parent process are not implicitly inherited.
+
+      Parameters
+      ----------
+      cmdstr : str
+          One or more Luna commands, optionally separated by newlines.
+      workers : int, optional
+         Number of worker processes.  Defaults to half the available CPUs,
+         capped at 10 and at the number of sample-list records.
+      batch_size : int, optional
+         Number of records per submitted worker batch.  Smaller values provide
+         more frequent progress updates.  Defaults to one batch per worker,
+         or one record per batch when ``progress=True``.
+      params : dict or iterable of (str, object), optional
+         Project-level Luna variables to apply in each worker before each
+          record is evaluated.  Values override duplicate keys from
+          *param_file*.
+      param_file : str or path-like, optional
+          Luna-style parameter file.  Blank lines and ``%`` comments are
+          skipped; tab, space, and ``=`` delimiters are supported.
+      strict : bool, optional
+          If ``True``, raise ``ParallelProcError`` when any record or worker
+          fails.  The exception contains the partial result.
+      progress : bool or callable, optional
+         If ``True``, show a tqdm progress bar.  If callable, receive simple
+         parent-process progress event dicts.
+      n1 : int, optional
+          First sample-list row to process (1-based, inclusive).  Mirrors
+          Luna's ``n1`` option.
+      n2 : int, optional
+          Last sample-list row to process (1-based, inclusive).  Mirrors
+          Luna's ``n2`` option.
+      ids : str or list of str, optional
+          Process only individuals whose ID appears in this list.  A plain
+          string is split on whitespace.  Mirrors Luna's ``id=`` option.
+      skip : str or list of str, optional
+          Exclude individuals whose ID appears in this list.  A plain
+          string is split on whitespace.  Mirrors Luna's ``skip=`` option.
+
+      Returns
+      -------
+      lunapi.parallel.ParallelProcResult
+          Object containing concatenated ``tables`` plus ``errors``,
+          ``stdout`` and per-record metadata.
+      """
+      from .parallel import run_parallel_project
+
+      return run_parallel_project(
+         self,
+         cmdstr,
+         workers=workers,
+         batch_size=batch_size,
+         params=params,
+         param_file=param_file,
+         strict=strict,
+         progress=progress,
+         out_db=out_db,
+         out_text=out_text,
+         in_memory=in_memory,
+         n1=n1,
+         n2=n2,
+         ids=ids,
+         skip=skip,
+      )
+
+   #------------------------------------------------------------------------
+
+   def procn(self, cmdstr, workers=None, batch_size=None, params=None,
+             param_file=None, strict=False, progress=True,
+             out_db=None, out_text=None, in_memory=None,
+             n1=None, n2=None, ids=None, skip=None):
+      """Evaluate Luna commands across the sample list using N worker processes.
+
+      Convenience alias for :meth:`proc_parallel`.
+      """
+      return self.proc_parallel(
+         cmdstr,
+         workers=workers,
+         batch_size=batch_size,
+         params=params,
+         param_file=param_file,
+         strict=strict,
+         progress=progress,
+         out_db=out_db,
+         out_text=out_text,
+         in_memory=in_memory,
+         n1=n1,
+         n2=n2,
+         ids=ids,
+         skip=skip,
+      )
 
    #------------------------------------------------------------------------
 
@@ -654,11 +765,18 @@ class proj:
           Mapping of ``"COMMAND: STRATA"`` keys to ``pandas.DataFrame``
           result tables.
       """
+      from .parallel import ProcResult, _errors_frame, _stdout_frame, _records_frame
       silence_mode = self.is_silenced()
       self.silence(True,False)
-      r = proj.eng.eval(cmdstr)
+      proj.eng.eval(cmdstr)
       self.silence( silence_mode , False )
-      return tables( r )
+      return ProcResult(
+         _owner=self,
+         errors=_errors_frame([]),
+         stdout=_stdout_frame([]),
+         records=_records_frame([]),
+         workers=1,
+      )
 
    #------------------------------------------------------------------------
 
@@ -722,6 +840,7 @@ class proj:
           Result table, or ``None`` if the result store is empty.
       """
       if self.empty_result_set(): return None
+      strata = _coerce_strata( proj.eng.strata(), cmd, strata )
       r = proj.eng.table( cmd , strata )
       t = pd.DataFrame( r[1] ).T
       t.columns = r[0]

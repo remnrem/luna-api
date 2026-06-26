@@ -248,6 +248,46 @@ PYBIND11_MODULE(lunapi0, m) {
            "Return a result table (defined by a command/strata pair) from a "
            "prior eval()")
 
+      .def("inject_table",
+           [](lunapi_t & self,
+              const std::string & cmd,
+              const std::string & strata,
+              const std::vector<std::string> & col_names,
+              py::list data_cols) {
+             rtable_t t;
+             t.cols = col_names;
+             int ncols = (int)col_names.size();
+             t.data.resize(ncols);
+             int nrows = ncols > 0 ? (int)py::len(data_cols[0]) : 0;
+             t.nrows = nrows;
+             for (int j = 0; j < ncols; j++) {
+               py::list col = data_cols[j].cast<py::list>();
+               t.data[j].resize(nrows);
+               for (int i = 0; i < nrows; i++) {
+                 py::object v = col[i];
+                 if (v.is_none())
+                   t.data[j][i] = std::monostate{};
+                 else if (py::isinstance<py::int_>(v))
+                   t.data[j][i] = v.cast<int>();
+                 else if (py::isinstance<py::float_>(v))
+                   t.data[j][i] = v.cast<double>();
+                 else
+                   t.data[j][i] = py::str(v).cast<std::string>();
+               }
+             }
+             self.inject_table(cmd, strata, t);
+           },
+           "Inject a result table directly into the result store")
+
+      .def("output_attach",    &lunapi_t::output_attach,
+           "Attach a destrat SQLite output database (overwrites if exists)")
+
+      .def("output_plaintext", &lunapi_t::output_plaintext,
+           "Set plain-text table output root folder")
+
+      .def("output_close",     &lunapi_t::output_close,
+           "Close and flush the current file output")
+
       .def("run_gpa",
            &lunapi_t::run_gpa,
            "Run --gpa-prep (prep_mode=True) or --gpa (prep_mode=False) without "
@@ -469,6 +509,47 @@ PYBIND11_MODULE(lunapi0, m) {
       .def("tables", py::overload_cast<>(&lunapi_inst_t::results, py::const_),
            "Return a result table (defined by a command/strata pair) from a "
            "prior eval()")
+
+      .def("inject_table",
+           [](lunapi_inst_t & self,
+              const std::string & cmd,
+              const std::string & strata,
+              const std::vector<std::string> & col_names,
+              py::list data_cols) {
+             rtable_t t;
+             t.cols = col_names;
+             int ncols = (int)col_names.size();
+             t.data.resize(ncols);
+             int nrows = ncols > 0 ? (int)py::len(data_cols[0]) : 0;
+             t.nrows = nrows;
+             for (int j = 0; j < ncols; j++) {
+               py::list col = data_cols[j].cast<py::list>();
+               t.data[j].resize(nrows);
+               for (int i = 0; i < nrows; i++) {
+                 py::object v = col[i];
+                 if (v.is_none())
+                   t.data[j][i] = std::monostate{};
+                 else if (py::isinstance<py::int_>(v))
+                   t.data[j][i] = v.cast<int>();
+                 else if (py::isinstance<py::float_>(v))
+                   t.data[j][i] = v.cast<double>();
+                 else
+                   t.data[j][i] = py::str(v).cast<std::string>();
+               }
+             }
+             self.rtables.tables[cmd][strata] = t;
+           },
+           "Inject a result table directly into the result store")
+
+      .def(
+          "eval_file",
+          [](lunapi_inst_t &self, const std::string &cmd) {
+            py::gil_scoped_release r;
+            return self.eval_file(cmd);
+          },
+          "Evaluate Luna commands writing directly to the configured file output "
+          "(no in-memory capture); caller must have called output_attach() or "
+          "output_plaintext() on the project engine first")
 
       .def("get_id", [](const lunapi_inst_t &a) { return a.get_id(); })
 

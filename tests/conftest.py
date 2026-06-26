@@ -70,6 +70,13 @@ def _write_sl(path, edf_path, annot_path):
     path.write_text(f"test_subject\t{edf_path}\t{annot_path}\n")
 
 
+def _write_sl_two(path, edf_path, annot_path):
+    path.write_text(
+        f"test_subject_1\t{edf_path}\t.\n"
+        f"test_subject_2\t{edf_path}\t.\n"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Track 1: in-memory (no files)
 # ---------------------------------------------------------------------------
@@ -121,4 +128,11 @@ def tmp_annot(tmp_path_factory):
 def tmp_sl(tmp_path_factory, tmp_edf, tmp_annot):
     p = tmp_path_factory.mktemp("sl") / "study.lst"
     _write_sl(p, tmp_edf, tmp_annot)
+    return p
+
+
+@pytest.fixture(scope="session")
+def tmp_sl_two(tmp_path_factory, tmp_edf, tmp_annot):
+    p = tmp_path_factory.mktemp("sl_two") / "study.lst"
+    _write_sl_two(p, tmp_edf, tmp_annot)
     return p

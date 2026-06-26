@@ -10,8 +10,11 @@ the historical single-module API surface during migration.
 from .project import *
 from .instance import *
 from .results import *
+from .parallel import *
 from .segsrv import *
 from .viz import *
 from .moonbeam import *
 from .resources import *
 from .gpa import gpa_prep, gpa_manifest, gpa_run, gpa_dump, gpa_get_xy, gpa_get_xy_partial, gpa_clear_cache
+from .destrat import *
+from .edf_utils import *

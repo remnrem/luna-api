@@ -5,6 +5,7 @@ annotation access, evaluation, and in-memory signal editing operations.
 """
 
 import lunapi.lunapi0 as _luna
+from lunapi.parallel import coerce_strata as _coerce_strata
 
 import pandas as pd
 import numpy as np
@@ -572,10 +573,10 @@ class inst:
    #------------------------------------------------------------------------
 
    def proc( self, cmdstr ):
-      """Evaluate one or more Luna commands and return results as a dict.
+      """Evaluate one or more Luna commands and return a ProcResult.
 
-      Unlike :meth:`eval`, this method returns the result tables directly
-      as a dict rather than storing them internally.
+      Results are stored in the C-level cache and accessible via
+      :meth:`table` or through the returned :class:`ProcResult`.
 
       Parameters
       ----------
@@ -584,23 +585,25 @@ class inst:
 
       Returns
       -------
-      dict
-          Mapping of ``"COMMAND: STRATA"`` string keys to
-          ``pandas.DataFrame`` result tables.
+      ProcResult
       """
-      # < log , tables >
-      r = self.edf.proc( cmdstr )
-      # extract and return result tables
-      return tables( r[1] )
+      from lunapi.parallel import ProcResult, _errors_frame, _stdout_frame, _records_frame
+      self.edf.proc( cmdstr )
+      return ProcResult(
+         _owner=self,
+         errors=_errors_frame([]),
+         stdout=_stdout_frame([]),
+         records=_records_frame([]),
+         workers=1,
+      )
 
    #------------------------------------------------------------------------
 
    def silent_proc( self, cmdstr ):
-      """Evaluate Luna commands silently and return results as a dict.
+      """Evaluate Luna commands silently and return a ProcResult.
 
       Suppresses log output for the duration of the call, then restores
-      the previous silence state.  Primarily used by internal helper
-      methods (e.g. :meth:`stages`, :meth:`has_staging`).
+      the previous silence state.
 
       Parameters
       ----------
@@ -609,21 +612,21 @@ class inst:
 
       Returns
       -------
-      dict
-          Mapping of ``"COMMAND: STRATA"`` keys to ``pandas.DataFrame``
-          result tables.
+      ProcResult
       """
-
+      from lunapi.parallel import ProcResult, _errors_frame, _stdout_frame, _records_frame
       _proj = proj(False)
       silence_mode = _proj.is_silenced()
       _proj.silence(True,False)
-
-      r = self.edf.proc( cmdstr )
-
+      self.edf.proc( cmdstr )
       _proj.silence( silence_mode , False )
-
-      # extract and return result tables
-      return tables( r[1] )
+      return ProcResult(
+         _owner=self,
+         errors=_errors_frame([]),
+         stdout=_stdout_frame([]),
+         records=_records_frame([]),
+         workers=1,
+      )
 
    #------------------------------------------------------------------------
 
@@ -642,16 +645,19 @@ class inst:
           result tables.
       """
 
+      from lunapi.parallel import ProcResult, _errors_frame, _stdout_frame, _records_frame
       _proj = proj(False)
       silence_mode = _proj.is_silenced()
       _proj.silence(True,False)
-
-      r = self.edf.proc_lunascope( cmdstr )
-
+      self.edf.proc_lunascope( cmdstr )
       _proj.silence( silence_mode , False )
-
-      # extract and return result tables
-      return tables( r[1] )
+      return ProcResult(
+         _owner=self,
+         errors=_errors_frame([]),
+         stdout=_stdout_frame([]),
+         records=_records_frame([]),
+         workers=1,
+      )
 
    #------------------------------------------------------------------------
 
@@ -699,6 +705,7 @@ class inst:
           Result table, or ``None`` if the result store is empty.
       """
       if ( self.empty_result_set() ): return None
+      strata = _coerce_strata( self.edf.strata(), cmd, strata )
       r = self.edf.table( cmd , strata )
       t = pd.DataFrame( r[1] ).T
       t.columns = r[0]
@@ -1419,11 +1426,9 @@ class inst:
           Table with one row per epoch and a ``STAGE`` column, or
           ``None`` if no staging annotations are present.
       """
-      hyp = self.silent_proc( "STAGE" )
-      if type(hyp) is type(None): return
-      if 'STAGE: E' in hyp:
-         return hyp[ 'STAGE: E' ]
-      return
+      self.silent_proc( "STAGE" )
+      if self.empty_result_set(): return
+      return self.table( 'STAGE', 'E' )
 
    # --------------------------------------------------------------------------------
 
@@ -1585,11 +1590,11 @@ class inst:
       if type(ch) is not list: ch = [ ch ]
 
       if var == 'PSD':
-         res = self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = res[ 'PSD: CH_F' ]
+         self.silent_proc( 'PSD spectrum dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
+         df = self.table( 'PSD', 'CH_F' )
       else:
-         res = self.silent_proc( 'MTM tw=15 dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
-         df = res[ 'MTM: CH_F' ]
+         self.silent_proc( 'MTM tw=15 dB max=' + str(maxf) + ' sig=' + ','.join(ch) )
+         df = self.table( 'MTM', 'CH_F' )
 
       psd( df = df , ch = ch , var = var ,
            minf = minf , maxf = maxf , minp = minp , maxp = maxp ,
@@ -1649,8 +1654,8 @@ class inst:
          minf=0.5
       if maxf is None:
          maxf=25
-      res = self.silent_proc( "PSD epoch-spectrum dB sig="+ch+" min="+str(minf)+" max="+str(maxf) )[ 'PSD: CH_E_F' ]
-      return spec( res , ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
+      self.silent_proc( "PSD epoch-spectrum dB sig="+ch+" min="+str(minf)+" max="+str(maxf) )
+      return spec( self.table( 'PSD', 'CH_E_F' ), ch=ch, var='PSD', mine=mine,maxe=maxe,minf=minf,maxf=maxf,w=w)
 
 
 __all__ = ["inst"]
