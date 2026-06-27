@@ -42,6 +42,17 @@ def test_proj_instantiates():
     assert p is not None
 
 
+def test_proj_vars_coerce_bool_to_numeric_strings():
+    from lunapi import proj
+    p = proj(verbose=False)
+    p.clear_vars()
+    p.vars({"truthy": True, "falsey": False, "threshold": 1.25})
+    assert p.vars("truthy") == "1"
+    assert p.vars("falsey") == "0"
+    assert p.vars("threshold") == "1.25"
+    p.clear_vars()
+
+
 def test_inst_requires_path():
     from lunapi import inst
     with pytest.raises(TypeError):

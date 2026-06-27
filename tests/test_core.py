@@ -52,9 +52,9 @@ def test_headers_sample_rate(rec):
 # Luna command execution and output tables
 # ---------------------------------------------------------------------------
 
-def test_proc_returns_dict(rec):
+def test_proc_returns_dict_like(rec):
     result = rec.proc("HEADERS")
-    assert isinstance(result, dict)
+    assert hasattr(result, "__getitem__")  # ProcResult is dict-like, not dict
     assert len(result) > 0
 
 
@@ -88,6 +88,15 @@ def test_eval_and_table(rec):
 def test_epoch_command(rec):
     result = rec.proc("EPOCH len=30")
     assert any("EPOCH" in k for k in result)
+
+
+def test_inst_vars_coerce_bool_to_numeric_strings(rec):
+    rec.clear_vars()
+    rec.vars({"truthy": True, "falsey": False, "threshold": 1.25})
+    assert rec.vars("truthy") == "1"
+    assert rec.vars("falsey") == "0"
+    assert rec.vars("threshold") == "1.25"
+    rec.clear_vars()
 
 
 # ---------------------------------------------------------------------------
@@ -161,5 +170,5 @@ def test_proj_inst_from_sample_list(lp, tmp_sl):
 def test_proj_proc_across_cohort(lp, tmp_sl):
     lp.sample_list(str(tmp_sl))
     results = lp.proc("HEADERS")
-    assert isinstance(results, dict)
+    assert hasattr(results, "__getitem__")  # ProcResult is dict-like, not dict
     assert any("HEADERS" in k for k in results)
