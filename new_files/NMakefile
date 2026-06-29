@@ -105,6 +105,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      dsp/zpeaks.cpp \
 	      dynamics/e-cycles.cpp \
 	      dynamics/qdynam.cpp \
+	      dynamics/evtdyn.cpp \
 	      edf/align.cpp \
 	      edf/canonical.cpp \
 	      edf/chep.cpp \

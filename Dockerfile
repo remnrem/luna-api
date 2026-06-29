@@ -5,11 +5,12 @@ USER root
 WORKDIR /build
 
 ENV DEBIAN_FRONTEND=noninteractive
+ARG LIGHTGBM_REF=v4.6.0
 
 RUN apt-get update \
  && apt-get install -y git g++ less emacs nano wget micro libomp5 cmake fftw3-dev libomp-dev
 
-RUN git clone --recursive https://github.com/microsoft/LightGBM \
+RUN git clone --recursive --branch "${LIGHTGBM_REF}" --depth 1 https://github.com/microsoft/LightGBM \
  && cd LightGBM \
  && mkdir build \
  && cd build \

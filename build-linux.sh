@@ -7,6 +7,7 @@ ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 DEPS_DIR="${ROOT}/depends"
 CACHE_DIR="${DEPENDS_CACHE_DIR:-${ROOT}/depends-cache/linux}"
 MODE="${NATIVE_DEPS_MODE:-lunapi}"
+LIGHTGBM_REF="${LIGHTGBM_REF:-v4.6.0}"
 QUIET="${NATIVE_DEPS_QUIET:-1}"
 BUILD_LOG="${ROOT}/native-deps-build.log"
 
@@ -208,9 +209,9 @@ if [[ "${MODE}" == "all" ]]; then
   cd "${DEPS_DIR}"
   rm -rf LightGBM
   if [[ "${QUIET}" == "1" ]]; then
-    git clone --recursive https://github.com/microsoft/LightGBM >> "${BUILD_LOG}" 2>&1
+    git clone --recursive --branch "${LIGHTGBM_REF}" --depth 1 https://github.com/microsoft/LightGBM >> "${BUILD_LOG}" 2>&1
   else
-    git clone --recursive https://github.com/microsoft/LightGBM
+    git clone --recursive --branch "${LIGHTGBM_REF}" --depth 1 https://github.com/microsoft/LightGBM
   fi
   cd LightGBM
   mkdir -p build

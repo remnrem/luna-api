@@ -7,6 +7,7 @@ ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 DEPS_DIR="${ROOT}/depends"
 CACHE_DIR="${DEPENDS_CACHE_DIR:-${ROOT}/depends-cache/macos}"
 MODE="${NATIVE_DEPS_MODE:-lunapi}"
+LIGHTGBM_REF="${LIGHTGBM_REF:-v4.6.0}"
 
 mkdir -p "${DEPS_DIR}" "${CACHE_DIR}"
 
@@ -167,7 +168,7 @@ if [[ "${MODE}" == "all" ]]; then
   # LightGBM
   cd "${DEPS_DIR}"
   rm -rf LightGBM
-  git clone --recursive https://github.com/microsoft/LightGBM
+  git clone --recursive --branch "${LIGHTGBM_REF}" --depth 1 https://github.com/microsoft/LightGBM
   cd LightGBM
   mkdir -p build
   cd build

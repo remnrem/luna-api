@@ -3,6 +3,9 @@ name: Build and Publish Windows
 on:
   workflow_dispatch:
 
+env:
+  LIGHTGBM_REF: v4.6.0
+
 jobs:
   build_windows_wheels:
     name: Build wheels on Windows
@@ -45,7 +48,7 @@ jobs:
         shell: cmd
         run: |
           cd depends
-          git clone --recursive https://github.com/microsoft/LightGBM
+          git clone --recursive --branch %LIGHTGBM_REF% --depth 1 https://github.com/microsoft/LightGBM
           cd LightGBM
           mkdir build
           cd build
