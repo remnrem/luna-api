@@ -25,9 +25,9 @@ def test_default_workers_caps_at_ten():
 
 
 def test_clamp_workers_bounds_and_record_count():
-    assert clamp_workers(0) == 1
-    assert clamp_workers(99) == 10
-    assert clamp_workers(8, total_records=3) == 3
+    assert clamp_workers(0, cpu_count=8) == 1
+    assert clamp_workers(99, cpu_count=8) == 8
+    assert clamp_workers(8, total_records=3, cpu_count=8) == 3
 
 
 def test_project_eval_slices_are_contiguous_and_cover_all_rows():

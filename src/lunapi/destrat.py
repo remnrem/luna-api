@@ -80,6 +80,22 @@ def _placeholders(n):
     return ','.join('?' * n)
 
 
+def _maybe_numeric(series):
+    """Return a numeric Series when all non-missing values are numeric.
+
+    SQLite stores strata levels as text, including intrinsically numeric
+    factors such as frequency.  Treat textual NA/NaN markers as missing for
+    this check, but preserve the original Series if any other text is present.
+    """
+    text = series.astype("string").str.strip().str.casefold()
+    cleaned = series.mask(text.isin(("na", "nan")))
+    numeric = pd.to_numeric(cleaned, errors="coerce")
+    present = cleaned.notna()
+    if numeric[present].notna().all():
+        return numeric
+    return series
+
+
 # ---------------------------------------------------------------------------
 # Per-file metadata cache
 # ---------------------------------------------------------------------------
@@ -624,7 +640,11 @@ class destrat:
                 var_cols = sorted(col for col in wide_df.columns if col not in existing_index)
 
         final_cols = [col for col in index_cols if col in wide_df.columns] + var_cols
-        return wide_df[final_cols].reset_index(drop=True)
+        result = wide_df[final_cols].reset_index(drop=True)
+        for col in result.columns:
+            if col != 'ID':
+                result[col] = _maybe_numeric(result[col])
+        return result
 
     # ------------------------------------------------------------------
     # Repr

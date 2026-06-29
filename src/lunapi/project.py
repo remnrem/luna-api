@@ -749,22 +749,25 @@ class proj:
 
         Convenience alias for :meth:`proc_parallel`.
         """
-        return self.proc_parallel(
-            cmdstr,
+        kwargs = dict(
             workers=workers,
             batch_size=batch_size,
             params=params,
             param_file=param_file,
             strict=strict,
             progress=progress,
-            out_db=out_db,
-            out_text=out_text,
-            in_memory=in_memory,
-            n1=n1,
-            n2=n2,
-            ids=ids,
-            skip=skip,
         )
+        optional = {
+            "out_db": out_db,
+            "out_text": out_text,
+            "in_memory": in_memory,
+            "n1": n1,
+            "n2": n2,
+            "ids": ids,
+            "skip": skip,
+        }
+        kwargs.update({key: value for key, value in optional.items() if value is not None})
+        return self.proc_parallel(cmdstr, **kwargs)
 
     #------------------------------------------------------------------------
 

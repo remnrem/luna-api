@@ -43,7 +43,7 @@ class FileOutputModeError(RuntimeError):
     pass
 
 
-@dataclass
+@dataclass(init=False)
 class ProcResult:
     """Result returned by proc(), silent_proc(), proc_parallel(), and procn().
 
@@ -63,9 +63,35 @@ class ProcResult:
     _out_paths: list = field(default_factory=list, repr=False)
     _data: dict = field(default=None, repr=False)
 
+    def __init__(
+        self,
+        _owner=None,
+        errors=None,
+        stdout=None,
+        records=None,
+        workers=1,
+        _out_paths=None,
+        _data=None,
+        tables=None,
+    ):
+        if tables is not None and _data is not None:
+            raise TypeError("pass either tables or _data, not both")
+        self._owner = _owner
+        self.errors = pd.DataFrame() if errors is None else errors
+        self.stdout = pd.DataFrame() if stdout is None else stdout
+        self.records = pd.DataFrame() if records is None else records
+        self.workers = workers
+        self._out_paths = [] if _out_paths is None else _out_paths
+        self._data = dict(tables) if tables is not None else _data
+
     @property
     def ok(self) -> bool:
         return self.errors.empty
+
+    @property
+    def tables(self):
+        """Provide mapping-style table access and a callable table index."""
+        return _ResultTables(self)
 
     def _file_mode_error(self):
         paths = ", ".join(str(p) for p in self._out_paths) if self._out_paths else "(unknown)"
@@ -87,10 +113,12 @@ class ProcResult:
     def __getitem__(self, key):
         if self._data is not None:
             if isinstance(key, tuple) and len(key) == 2:
-                key = _table_key(key[0], key[1])
+                return self.table(key[0], key[1])
             if key not in self._data:
                 available = ", ".join(self._data.keys()) or "<none>"
-                raise KeyError(f"{key!r} not found in results. Available: {available}")
+                raise KeyError(
+                    f"{key!r} not found in results. Available tables: {available}"
+                )
             return self._data[key]
         if self._owner is None:
             self._file_mode_error()
@@ -140,7 +168,8 @@ class ProcResult:
     def table(self, cmd, strata="BL"):
         """Return one result table by Luna command and strata."""
         if self._data is not None:
-            return self._data.get(_table_key(cmd, strata))
+            key = _resolve_table_key(self._data, cmd, strata)
+            return self._data[key]
         if self._owner is None:
             self._file_mode_error()
         return self._owner.table(cmd, strata)
@@ -169,7 +198,11 @@ class ProcResult:
     def has_table(self, cmd, strata="BL"):
         """Return whether a command/strata table is present."""
         if self._data is not None:
-            return _table_key(cmd, strata) in self._data
+            try:
+                _resolve_table_key(self._data, cmd, strata)
+                return True
+            except KeyError:
+                return False
         if self._owner is None:
             return False
         try:
@@ -203,6 +236,8 @@ class ProcResult:
 
     def table_index(self):
         """Return ``{command: [strata_factor_list, ...]}`` for available tables."""
+        if self._data is not None:
+            return _tables_index(self._data)
         if self._owner is None:
             self._file_mode_error()
         s = self._owner.strata()
@@ -266,6 +301,40 @@ class ProcResult:
         return (
             f"<p><b>Completed with errors</b>.</p>"
         ) + self.errors._repr_html_()
+
+
+class _ResultTables:
+    """Mapping view that retains the historical ``result.tables()`` API."""
+
+    def __init__(self, result):
+        self._result = result
+
+    def __getitem__(self, key):
+        return self._result[key]
+
+    def __iter__(self):
+        return iter(self._result)
+
+    def __len__(self):
+        return len(self._result)
+
+    def __contains__(self, key):
+        return key in self._result
+
+    def keys(self):
+        return self._result.keys()
+
+    def items(self):
+        return self._result.items()
+
+    def values(self):
+        return self._result.values()
+
+    def get(self, key, default=None):
+        return self._result.get(key, default)
+
+    def __call__(self):
+        return self._result.table_index()
 
 
 # Keep old name as alias for any external code that referenced it
@@ -366,12 +435,19 @@ def default_workers(cpu_count=None) -> int:
     return min(10, max(1, cpu_count // 2))
 
 
-def clamp_workers(value, total_records=None) -> int:
+def clamp_workers(value, total_records=None, cpu_count=None) -> int:
+    if cpu_count is None:
+        process_cpu_count = getattr(os, "process_cpu_count", None)
+        cpu_count = process_cpu_count() if process_cpu_count is not None else os.cpu_count()
     try:
-        value = default_workers() if value is None else int(value)
+        cpu_count = max(1, int(cpu_count))
     except (TypeError, ValueError):
-        value = default_workers()
-    value = max(1, value)
+        cpu_count = 1
+    try:
+        value = default_workers(cpu_count) if value is None else int(value)
+    except (TypeError, ValueError):
+        value = default_workers(cpu_count)
+    value = min(cpu_count, max(1, value))
     if total_records is not None:
         value = min(value, max(1, int(total_records)))
     return value

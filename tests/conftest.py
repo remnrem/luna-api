@@ -15,6 +15,12 @@ REC_DUR = 30      # seconds per record
 TOTAL_SAMP = SR * N_RECS * REC_DUR
 
 
+def pytest_report_header(config):
+    import lunapi
+
+    return f"lunapi: {lunapi.__version__}"
+
+
 def _sine(freq_hz, n, sr):
     return [math.sin(2 * math.pi * freq_hz * i / sr) * 200 for i in range(n)]
 
