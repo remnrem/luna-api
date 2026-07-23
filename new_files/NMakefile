@@ -31,9 +31,9 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      db/retval.cpp \
 	      db/sqlwrap.cpp \
 	      defs/defs.cpp \
-	      defs/arousals2.cpp \
-	      defs/combine_emg.cpp \
-	      defs/plm.cpp \
+	      dsp/arousals2.cpp \
+	      dsp/combine_emg.cpp \
+	      dsp/plm.cpp \
 	      dsp/acf.cpp \
 	      dsp/armorf.cpp \
 	      dsp/arousals.cpp \
