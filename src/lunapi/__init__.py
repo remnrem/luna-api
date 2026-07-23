@@ -33,6 +33,6 @@ lunapi.lunapi1
     visualization helpers.
 """
 
-__version__ = "1.6.5"
+__version__ = "1.6.7"
 
 from lunapi.lunapi1 import *

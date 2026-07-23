@@ -398,11 +398,7 @@ def read_lwf(
     ]
     meta = meta[col_order].reset_index(drop=True)
 
-    if detected_annot_ch_match:
-        channels = pd.DataFrame([{'label': '(annot_ch)', 'unit': '',
-                                   'sr': sr, 'phys_min': np.nan, 'phys_max': np.nan}])
-    else:
-        channels = pd.DataFrame(ref_ch)
+    channels = pd.DataFrame(ref_ch)
 
     attrs = {
         'sfreq':          sr,

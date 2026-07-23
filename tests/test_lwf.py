@@ -336,6 +336,12 @@ class TestReadLwfAnnotChMatch:
         r = read_lwf(annot_ch_file)
         assert np.all(np.isfinite(r.data))
 
+    def test_channels_has_real_phys(self, annot_ch_file):
+        r = read_lwf(annot_ch_file)
+        assert list(r.channels['label']) == ['CZ', 'FZ']
+        assert r.channels['phys_min'].notna().all()
+        assert r.channels['phys_max'].notna().all()
+
     def test_per_channel_phys_decode(self, tmp_path):
         """CZ and FZ have different physical ranges; decode must use each channel's own."""
         channels = [
