@@ -109,6 +109,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      dynamics/e-cycles.cpp \
 	      dynamics/qdynam.cpp \
 	      dynamics/evtdyn.cpp \
+	      dynamics/sigdyn.cpp \
 	      edf/align.cpp \
 	      edf/canonical.cpp \
 	      edf/chep.cpp \
@@ -127,7 +128,6 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      edf/slist.cpp \
 	      edf/tal.cpp \
 	      edf/trans.cpp \
-	      edfz/bgzf.cpp \
 	      edfz/edfz.cpp \
 	      edfz/edfz2.cpp \
 	      dumper/waveform.cpp \
@@ -159,6 +159,8 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      models/knn.cpp \
 	      models/model.cpp \
 	      models/predict.cpp \
+	      models/ort-common.cpp \
+	      models/ort-sleepfm.cpp \
 	      pdc/exe.cpp \
 	      pdc/external.cpp \
 	      pdc/pdc.cpp \
@@ -212,6 +214,14 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      stats/qda.cpp \
 	      stats/running-stats.cpp \
 	      stats/statistics.cpp \
+	      stats/dpp-filter.cpp \
+	      stats/dpp-fit.cpp \
+	      stats/dpp-hypno.cpp \
+	      stats/dpp-io.cpp \
+	      stats/dpp-spec.cpp \
+	      stats/dpp-twolevel.cpp \
+	      stats/dpp-vector.cpp \
+	      stats/dpp.cpp \
 	      suds/esp.cpp \
 	      suds/features.cpp \
 	      suds/library.cpp \
@@ -263,28 +273,28 @@ C_SOURCES = db/sqlite3.c \
 			zlib-1.3/trees.c \
 			zlib-1.3/uncompr.c \
 			zlib-1.3/zutil.c \
-            stats/catch22/butterworth.c \
-     stats/catch22/c22_stats.c \
-stats/catch22/CO_AutoCorr.c \
-stats/catch22/DN_HistogramMode_10.c \
-stats/catch22/DN_HistogramMode_5.c \
-stats/catch22/DN_Mean.c \
-stats/catch22/DN_OutlierInclude.c \
-stats/catch22/DN_Spread_Std.c \
-stats/catch22/FC_LocalSimple.c \
-stats/catch22/fft.c \
-stats/catch22/helper_functions.c \
-stats/catch22/histcounts.c \
-stats/catch22/IN_AutoMutualInfoStats.c \
-stats/catch22/MD_hrv.c \
-stats/catch22/PD_PeriodicityWang.c \
-stats/catch22/SB_BinaryStats.c \
-stats/catch22/SB_CoarseGrain.c \
-stats/catch22/SB_MotifThree.c \
-stats/catch22/SB_TransitionMatrix.c \
-stats/catch22/SC_FluctAnal.c \
-stats/catch22/splinefit.c \
-stats/catch22/SP_Summaries.c
+			stats/catch22/butterworth.c \
+			stats/catch22/c22_stats.c \
+			stats/catch22/CO_AutoCorr.c \
+			stats/catch22/DN_HistogramMode_10.c \
+			stats/catch22/DN_HistogramMode_5.c \
+			stats/catch22/DN_Mean.c \
+			stats/catch22/DN_OutlierInclude.c \
+			stats/catch22/DN_Spread_Std.c \
+			stats/catch22/FC_LocalSimple.c \
+			stats/catch22/fft.c \
+			stats/catch22/helper_functions.c \
+			stats/catch22/histcounts.c \
+			stats/catch22/IN_AutoMutualInfoStats.c \
+			stats/catch22/MD_hrv.c \
+			stats/catch22/PD_PeriodicityWang.c \
+			stats/catch22/SB_BinaryStats.c \
+			stats/catch22/SB_CoarseGrain.c \
+			stats/catch22/SB_MotifThree.c \
+			stats/catch22/SB_TransitionMatrix.c \
+			stats/catch22/SC_FluctAnal.c \
+			stats/catch22/splinefit.c \
+			stats/catch22/SP_Summaries.c
 
 # Define the object files
 CPP_OBJECTS = $(CPP_SOURCES:.cpp=.obj)
