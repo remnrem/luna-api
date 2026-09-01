@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.15...3.26)
 project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -13,28 +13,55 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
 set(PYBIND11_NEWPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-include_directories("depends/fftw-3.3.10" )
-include_directories("depends/fftw-3.3.10/include/" )
-include_directories("~/luna-base/" )
-include_directories("~/luna-base/stats/" )
-include_directories("depends/LightGBM/include/")
-include_directories("/usr/local/include/")
+set(LUNAPI_DEPENDS_DIR "$ENV{GITHUB_WORKSPACE}/depends")
+if("$ENV{GITHUB_WORKSPACE}" STREQUAL "" OR NOT EXISTS "${LUNAPI_DEPENDS_DIR}")
+  set(LUNAPI_DEPENDS_DIR "${CMAKE_SOURCE_DIR}/depends")
+endif()
 
-link_directories("depends/")
+include_directories("${LUNAPI_DEPENDS_DIR}/fftw-3.3.10" )
+include_directories("${LUNAPI_DEPENDS_DIR}/fftw-3.3.10/include/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/luna-base/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/luna-base/stats/" )
+include_directories("${LUNAPI_DEPENDS_DIR}/LightGBM/include/")
+include_directories("/usr/local/include/")
+include_directories("/usr/local/include/eigen3")
+include_directories("/opt/homebrew/include/eigen3")
+include_directories("${LUNAPI_DEPENDS_DIR}/include/" )
+
+# ONNX Runtime is kept dynamic for wheel distribution.  The native build
+# scripts stage it under depends/onnxruntime with lib/ and include/.
+set(ORT_ROOT "$ENV{GITHUB_WORKSPACE}/depends/onnxruntime")
+if("$ENV{GITHUB_WORKSPACE}" STREQUAL "" OR NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
+  set(ORT_ROOT "${CMAKE_SOURCE_DIR}/depends/onnxruntime")
+endif()
+if(NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
+  message(FATAL_ERROR "ONNX Runtime shared library not found at ${ORT_ROOT}/lib/libonnxruntime.dylib")
+endif()
+include_directories("${ORT_ROOT}/include")
+
+link_directories("${LUNAPI_DEPENDS_DIR}/")
 link_directories("/usr/local/lib/")
 
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
-add_library( omp STATIC IMPORTED GLOBAL )
+add_library( onnxruntime SHARED IMPORTED GLOBAL )
 
-set_target_properties( luna      PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libluna.a" )
-set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/lib_lightgbm.a" )
-set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libfftw3.a" )
-set_target_properties( omp     PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/depends/libomp.a" )
+set_target_properties( luna      PROPERTIES IMPORTED_LOCATION  "${LUNAPI_DEPENDS_DIR}/libluna.a" )
+set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "${LUNAPI_DEPENDS_DIR}/lib_lightgbm.a" )
+set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION  "${LUNAPI_DEPENDS_DIR}/libfftw3.a" )
+set_target_properties( onnxruntime PROPERTIES
+  IMPORTED_LOCATION "${ORT_ROOT}/lib/libonnxruntime.dylib"
+  INTERFACE_INCLUDE_DIRECTORIES "${ORT_ROOT}/include"
+)
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm omp )
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm onnxruntime )
+set_target_properties( lunapi0 PROPERTIES
+  BUILD_RPATH "${ORT_ROOT}/lib"
+  INSTALL_RPATH "@loader_path"
+)
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
+install(FILES "${ORT_ROOT}/lib/libonnxruntime.dylib" DESTINATION lunapi)
