@@ -714,9 +714,8 @@ class moonbeam:
     def pull(self, iid, subcohort=None):
         """Download EDF and annotation files for one individual.
 
-        Files already present in the cache are skipped.  For compressed EDF
-        files (``.edf.gz`` / ``.edfz``) the companion ``.idx`` index file is
-        downloaded automatically.  Updates ``curr_id``, ``curr_edf``,
+        Files already present in the cache are skipped.  Updates
+        ``curr_id``, ``curr_edf``,
         ``curr_annots``, and ``curr_subcohort``.
 
         A call to :meth:`cohort` must have been made first to set the active
@@ -750,10 +749,6 @@ class moonbeam:
 
         print(f"\nPulling {iid}  [{sc}]  from '{self.curr_cohort}':")
         self.pull_file(self.curr_cohort, self.curr_edf)
-
-        # EDFZ companion index
-        if re.search(r'\.(edf\.gz|edfz)$', self.curr_edf, re.IGNORECASE):
-            self.pull_file(self.curr_cohort, self.curr_edf + '.idx')
 
         for annot in self.curr_annots:
             self.pull_file(self.curr_cohort, annot)
@@ -813,9 +808,9 @@ class moonbeam:
                   max_workers=_MAX_WORKERS):
         """Download files for multiple individuals using parallel connections.
 
-        Builds a flat list of all EDF, annotation, and (where applicable)
-        ``.idx`` files required by *iids*, then fetches them concurrently
-        using a thread pool.  Files already present in the cache are skipped
+        Builds a flat list of all EDF and annotation files required by
+        *iids*, then fetches them concurrently using a thread pool.  Files
+        already present in the cache are skipped
         before a thread is even allocated.  A summary line is printed on
         completion; individual failures are reported inline and do not abort
         remaining downloads.
@@ -850,8 +845,6 @@ class moonbeam:
                 print(f"  [skipped] {iid}: {exc}")
                 continue
             jobs.append((cohort, info['edf']))
-            if re.search(r'\.(edf\.gz|edfz)$', info['edf'], re.IGNORECASE):
-                jobs.append((cohort, info['edf'] + '.idx'))
             for annot in info['annots']:
                 jobs.append((cohort, annot))
 
