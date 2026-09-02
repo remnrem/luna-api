@@ -103,8 +103,8 @@ jobs:
         if: startsWith(matrix.os, 'macos-')
         run: |
           if [[ "${{ matrix.os }}" == "macos-15-intel" ]]; then
-            echo "MACOSX_DEPLOYMENT_TARGET=10.14" >> $GITHUB_ENV
-            echo "CMAKE_OSX_DEPLOYMENT_TARGET=10.14" >> $GITHUB_ENV
+            echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
+            echo "CMAKE_OSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
           else
             # macOS-15 / arm64 must be >= 11.0
             echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
