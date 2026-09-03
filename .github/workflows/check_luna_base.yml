@@ -1,0 +1,26 @@
+name: Check current luna-base
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/check_luna_base.sh'
+      - '.github/workflows/check_luna_base.yml'
+      - 'src/lunapi/lunapi0.cpp'
+      - 'build-linux.sh'
+      - 'build-macos.sh'
+
+jobs:
+  check:
+    name: Check luna-base checkout (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone and check luna-base
+        run: bash .github/check_luna_base.sh
