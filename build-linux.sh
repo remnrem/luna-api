@@ -283,4 +283,5 @@ else
     LDLIBS="${LDLIBS:-} -pthread"
 fi
 cp libluna.a "${LUNA_LIB}"
+cp libluna.a "${DEPS_DIR}/libluna.a"
 save_cache_payload

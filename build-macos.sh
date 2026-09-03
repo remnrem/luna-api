@@ -231,6 +231,7 @@ make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/ \
   CPPFLAGS="${CPPFLAGS:-} -I${DEPS_DIR}/include" \
   ORT=1 ORT_PATH="${ORT_DIST}"
 cp libluna.a "${LUNA_LIB}"
+cp libluna.a "${DEPS_DIR}/libluna.a"
 
 save_cache_payload
 exit 0
