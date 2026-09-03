@@ -32,17 +32,6 @@ from lunapi.parallel import coerce_strata as _coerce_strata
 
 import pandas as pd
 import numpy as np
-from scipy.stats.mstats import winsorize
-from scipy.signal import sosfilt
-import matplotlib.pyplot as plt
-from matplotlib import cm
-try:
-    from IPython.core import display as ICD
-    from IPython.display import display as _ipy_display
-except ImportError:
-    ICD = None
-    _ipy_display = None
-import plotly.graph_objects as go
 import os
 
 from .project import proj, _coerce_var_value
@@ -302,8 +291,12 @@ class inst:
         if len( t ) == 0: return t
         t.columns = ["ID","Gapped","Date","Start(hms)","Stop(hms)","Dur(hms)","Dur(s)","# sigs","# annots","Signals" ]
         with pd.option_context('display.max_colwidth',None):
-            if _ipy_display is not None:
-                _ipy_display(t)
+            try:
+                from IPython.display import display
+            except ImportError:
+                display = None
+            if display is not None:
+                display(t)
 
     #------------------------------------------------------------------------
 
@@ -1221,6 +1214,9 @@ class inst:
         zi = np.ma.masked_invalid(zi)
 
         # do plot
+
+        from scipy.stats.mstats import winsorize
+        import matplotlib.pyplot as plt
 
         if traces is True:
             fig, axs = plt.subplots( nrows = 2 , ncols = 1 , sharex=True,  height_ratios=[1, 2] )

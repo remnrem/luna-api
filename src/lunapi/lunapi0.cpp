@@ -288,6 +288,39 @@ PYBIND11_MODULE(lunapi0, m) {
       .def("output_close",     &lunapi_t::output_close,
            "Close and flush the current file output")
 
+      .def("write_db",
+           [](lunapi_t & self, const std::string & path,
+              const std::string & id, const std::string & file,
+              py::dict input) {
+             rtables_return_t tables;
+             for (auto item : input) {
+               std::string cmd = py::str(item.first);
+               py::dict command_tables = item.second.cast<py::dict>();
+               for (auto table_item : command_tables) {
+                 std::string strata = py::str(table_item.first);
+                 py::tuple spec = table_item.second.cast<py::tuple>();
+                 std::vector<std::string> cols =
+                   spec[0].cast<std::vector<std::string>>();
+                 py::list input_data = spec[1].cast<py::list>();
+                 rtable_data_t data;
+                 for (auto column_object : input_data) {
+                   py::list column = column_object.cast<py::list>();
+                   std::vector<rtable_elem_t> values;
+                   for (auto value_object : column) {
+                     py::object value = value_object.cast<py::object>();
+                     if (value.is_none()) values.emplace_back(std::monostate{});
+                     else if (py::isinstance<py::int_>(value)) values.emplace_back(value.cast<int>());
+                     else if (py::isinstance<py::float_>(value)) values.emplace_back(value.cast<double>());
+                     else values.emplace_back(py::str(value).cast<std::string>());
+                   }
+                   data.push_back(std::move(values));
+                 }
+                 tables[cmd][strata] = std::make_tuple(cols, data);
+               }
+             }
+             self.write_db(path, id, file, tables);
+           }, "Write supplied result tables using the native Luna DB writer")
+
       .def("run_gpa",
            &lunapi_t::run_gpa,
            "Run --gpa-prep (prep_mode=True) or --gpa (prep_mode=False) without "

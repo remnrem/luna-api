@@ -83,6 +83,23 @@ df = results["PSD"]["CH_F"]
 print(df.groupby("CH")["PSD"].mean())
 ```
 
+### Python destrat command
+
+The package also installs `destrat.py`, a Python/SQLite reader for Luna
+output databases.  It accepts the common native `destrat` query options,
+including row and column stratifiers and level restrictions:
+
+```bash
+destrat.py out.db
+destrat.py out.db +PSD -r CH F -v PSD
+destrat.py out.db +PSD -r F/11,15 CH -c B -v PSD
+```
+
+Multiple databases and glob patterns are accepted.  Extracted tables are
+written as tab-delimited output to standard output, so they can be redirected
+or piped to another program.  The same reader is available from Python as
+`lp.destrat(...)`.
+
 ### Automated sleep staging
 
 ```python

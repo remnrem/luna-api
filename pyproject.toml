@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "lunapi"
-version = "1.6.9"
+version = "1.7.0"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9,<3.15"
@@ -70,3 +70,7 @@ skip = "pp*"
 Homepage = "https://zzz.nyspi.org/luna/"
 Documentation = "https://zzz.nyspi.org/luna/"
 Repository = "https://github.com/remnrem/luna-api"
+
+[project.scripts]
+"luna.py" = "lunapi.cli:main"
+"destrat.py" = "lunapi.destrat_cli:main"
