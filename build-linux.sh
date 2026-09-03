@@ -283,6 +283,4 @@ else
     LDLIBS="${LDLIBS:-} -pthread"
 fi
 cp libluna.a "${LUNA_LIB}"
-
-restore_luna
 save_cache_payload
