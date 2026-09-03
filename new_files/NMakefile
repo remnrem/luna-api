@@ -222,6 +222,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      stats/dpp-twolevel.cpp \
 	      stats/dpp-vector.cpp \
 	      stats/dpp.cpp \
+	      stats/dpp-evaluation.cpp \
 	      suds/esp.cpp \
 	      suds/features.cpp \
 	      suds/library.cpp \
