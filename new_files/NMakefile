@@ -170,6 +170,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      pops/espriors.cpp \
 	      pops/hypnodensity.cpp \
 	      pops/hdstats.cpp \
+	      pops/hdstats-pc.cpp \
 	      pops/eval-stages.cpp \
 	      pops/indiv.cpp \
 	      pops/io.cpp \
@@ -178,6 +179,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      pops/post-soap.cpp \
 	      pops/spec.cpp \
 	      pops/posteriors.cpp \
+	      pops/sfm.cpp \
 	      resp/hb.cpp \
 	      resp/desat.cpp \
 	      resp/respbreath.cpp \
@@ -211,6 +213,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      stats/kmeans.cpp \
 	      stats/lda.cpp \
 	      stats/nmf.cpp \
+	      stats/pops-calibration.cpp \
 	      stats/qda.cpp \
 	      stats/running-stats.cpp \
 	      stats/statistics.cpp \
