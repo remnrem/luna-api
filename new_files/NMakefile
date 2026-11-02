@@ -171,6 +171,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      pops/hypnodensity.cpp \
 	      pops/hdstats.cpp \
 	      pops/hdstats-pc.cpp \
+	      pops/hdstats-model.cpp \
 	      pops/eval-stages.cpp \
 	      pops/indiv.cpp \
 	      pops/io.cpp \
