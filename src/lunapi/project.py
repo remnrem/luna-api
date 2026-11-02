@@ -27,6 +27,8 @@ managing a Luna project/session and sample-list lifecycle.
 
 from __future__ import annotations
 
+import json as _json
+
 import lunapi.lunapi0 as _luna
 
 import pandas as pd
@@ -222,6 +224,24 @@ class proj:
         None
         """
         self.eng.reinit()
+
+    def read_hdstats_pc_model(self, model_file: str) -> dict:
+        """Read a fitted HDSTATS-PC model through Luna's native reader.
+
+        The returned dictionary contains the fitted panels, feature
+        statistics/loadings, raw component coordinates, and embedded spec.
+        """
+        return _json.loads(proj.eng.read_hdstats_pc_model(str(model_file)))
+
+    def read_hdstats_pc_descriptor(self, model_file: str, descriptor_file: str) -> dict:
+        """Read a fitted model and validate/apply its reviewed descriptor.
+
+        Component IDs, labels, orientations, descriptions, and oriented
+        loadings in the returned dictionary come from Luna's core reader.
+        """
+        return _json.loads(proj.eng.read_hdstats_pc_descriptor(
+            str(model_file), str(descriptor_file)
+        ))
 
     #------------------------------------------------------------------------
 

@@ -116,6 +116,14 @@ PYBIND11_MODULE(lunapi0, m) {
 
   py::class_<lunapi_t>(m, "luna")
 
+      .def("read_hdstats_pc_model", &lunapi_t::read_hdstats_pc_model,
+           py::arg("model_file"),
+           "Read and validate an HDSTATS-PC model using Luna's native model reader; returns normalized JSON.")
+
+      .def("read_hdstats_pc_descriptor", &lunapi_t::read_hdstats_pc_descriptor,
+           py::arg("model_file"), py::arg("descriptor_file"),
+           "Read and validate an HDSTATS-PC descriptor against its fitted model; returns normalized JSON with reviewed semantics and oriented loadings.")
+
       .def("read_sample_list", &lunapi_t::read_sample_list,
            "Load a sample list from a file")
 
