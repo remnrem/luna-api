@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.10", "pybind11>=2.11"]
+requires = ["scikit-build-core>=0.12", "pybind11>=2.11"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -8,7 +8,8 @@ version = "1.7.1"
 readme = "README.md"
 description = "Python interface to the Luna toolset for sleep signal analysis"
 requires-python = ">=3.9,<3.15"
-license = {file = "LICENSE"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 
 dependencies = [
   "pandas>=2.2,<3",
@@ -41,7 +42,6 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Bio-Informatics",
   "Topic :: Scientific/Engineering",
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Framework :: Jupyter :: JupyterLab",
   "Natural Language :: English",
   "Programming Language :: Python :: 3",
