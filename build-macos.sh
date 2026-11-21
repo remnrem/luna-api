@@ -9,6 +9,11 @@ CACHE_DIR="${DEPENDS_CACHE_DIR:-${ROOT}/depends-cache/macos}"
 MODE="${NATIVE_DEPS_MODE:-lunapi}"
 LIGHTGBM_REF="${LIGHTGBM_REF:-v4.6.0}"
 ORT_REF="${ORT_REF:-v1.29.0}"
+LUNAPI_ORT="${LUNAPI_ORT:-0}"
+case "${LUNAPI_ORT}" in
+  0|1) ;;
+  *) echo "LUNAPI_ORT must be 0 or 1"; exit 2 ;;
+esac
 
 mkdir -p "${DEPS_DIR}" "${CACHE_DIR}"
 
@@ -30,7 +35,7 @@ case "${MODE}" in
     ;;
 esac
 
-echo "Native dependency mode: ${MODE}"
+echo "Native dependency mode: ${MODE} (ORT=${LUNAPI_ORT})"
 
 have_fftw_cache() {
   [[ -f "${FFTW_LIB}" && -f "${FFTW_HDR}" ]]
@@ -41,10 +46,20 @@ have_lgbm_cache() {
 }
 
 have_luna_cache() {
-  [[ -f "${LUNA_LIB}" && -d "${LUNA_BASE_CACHE}" ]]
+  [[ -f "${LUNA_LIB}" && -d "${LUNA_BASE_CACHE}" ]] || return 1
+  # Legacy caches were always built with ORT enabled.
+  local cached_ort=1
+  if [[ -f "${CACHE_DIR}/libluna-ort" ]]; then
+    cached_ort="$(cat "${CACHE_DIR}/libluna-ort")"
+  fi
+  if [[ "${cached_ort}" != "${LUNAPI_ORT}" ]]; then
+    echo "Cached libluna ORT=${cached_ort}; requested ORT=${LUNAPI_ORT}. Rebuild with NATIVE_DEPS_MODE=luna." >&2
+    return 1
+  fi
 }
 
 have_ort_cache() {
+  [[ "${LUNAPI_ORT}" == 0 ]] && return 0
   [[ -f "${ORT_CACHE}/lib/libonnxruntime.dylib" && -d "${ORT_CACHE}/include/onnxruntime" ]]
 }
 
@@ -84,6 +99,7 @@ restore_luna() {
   chmod -R u+w "${DEPS_DIR}/luna-base" 2>/dev/null || true
   chmod u+w "${DEPS_DIR}/libluna.a" 2>/dev/null || true
   cp "${LUNA_LIB}" "${DEPS_DIR}/libluna.a"
+  echo "${LUNAPI_ORT}" > "${DEPS_DIR}/libluna-ort"
   local luna_src=""
   local luna_dst="${DEPS_DIR}/luna-base"
   if [[ -d "${LUNA_BASE_CACHE}" ]]; then
@@ -109,18 +125,23 @@ restore_optional_dep_include() {
 }
 
 restore_ort() {
+  [[ "${LUNAPI_ORT}" == 0 ]] && return 0
   rm -rf "${ORT_DIST}"
   cp -R "${ORT_CACHE}" "${ORT_DIST}"
 }
 
 save_cache_payload() {
-  rm -rf "${LGBM_INCLUDE_CACHE}" "${LUNA_BASE_CACHE}" "${DEPS_INCLUDE_CACHE}" "${ORT_CACHE}"
+  rm -rf "${LGBM_INCLUDE_CACHE}" "${LUNA_BASE_CACHE}" "${DEPS_INCLUDE_CACHE}"
   cp -R "${DEPS_DIR}/LightGBM/include" "${LGBM_INCLUDE_CACHE}"
   cp -R "${DEPS_DIR}/luna-base" "${LUNA_BASE_CACHE}"
   if [[ -d "${DEPS_DIR}/include" ]]; then
     cp -R "${DEPS_DIR}/include" "${DEPS_INCLUDE_CACHE}"
   fi
-  cp -R "${ORT_DIST}" "${ORT_CACHE}"
+  echo "${LUNAPI_ORT}" > "${CACHE_DIR}/libluna-ort"
+  if [[ "${LUNAPI_ORT}" == 1 ]]; then
+    rm -rf "${ORT_CACHE}"
+    cp -R "${ORT_DIST}" "${ORT_CACHE}"
+  fi
   echo "CACHE_DIR=${CACHE_DIR}"
   ls -la "${CACHE_DIR}"
   ls -la "${DEPS_DIR}" || true
@@ -128,7 +149,7 @@ save_cache_payload() {
 
 if [[ "${MODE}" == "lunapi" ]]; then
   if ! have_fftw_cache || ! have_lgbm_cache || ! have_luna_cache || ! have_ort_cache; then
-    echo "lunapi mode requires cached FFTW/LGBM/luna-base/onnxruntime artifacts, but cache is incomplete"
+    echo "lunapi mode requires cached FFTW/LGBM/luna-base artifacts matching LUNAPI_ORT (and ONNX Runtime when enabled), but cache is incomplete"
     echo "have_fftw_cache=$(have_fftw_cache && echo true || echo false)"
     echo "have_lgbm_cache=$(have_lgbm_cache && echo true || echo false)"
     echo "have_luna_cache=$(have_luna_cache && echo true || echo false)"
@@ -149,7 +170,7 @@ fi
 
 if [[ "${MODE}" == "luna" ]]; then
   if ! have_fftw_cache || ! have_lgbm_cache || ! have_ort_cache; then
-    echo "luna mode requires cached FFTW/LGBM/onnxruntime artifacts, but cache is incomplete"
+    echo "luna mode requires cached FFTW/LGBM artifacts (and ONNX Runtime when enabled), but cache is incomplete"
     echo "have_fftw_cache=$(have_fftw_cache && echo true || echo false)"
     echo "have_lgbm_cache=$(have_lgbm_cache && echo true || echo false)"
     echo "have_ort_cache=$(have_ort_cache && echo true || echo false)"
@@ -194,32 +215,34 @@ if [[ "${MODE}" == "all" ]]; then
   mkdir -p "${DEPS_DIR}/LightGBM/lib"
   cp ../lib_lightgbm.a "${DEPS_DIR}/LightGBM/lib/lib_lightgbm.a"
 
-  # ONNX Runtime: shared, CPU-only, with contrib/ML operators and telemetry off.
-  cd "${DEPS_DIR}"
-  rm -rf onnxruntime-src
-  git clone --branch "${ORT_REF}" --depth 1 \
-    https://github.com/microsoft/onnxruntime onnxruntime-src
-  cd onnxruntime-src
-  python3 tools/ci_build/build.py \
-    --build_dir build/MacOS/ReleaseShared \
-    --config Release \
-    --build_shared_lib \
-    --skip_tests \
-    --parallel 0 \
-    --disable_contrib_ops \
-    --disable_ml_ops \
-    --no_telemetry \
-    --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
-    --target onnxruntime \
-    --cmake_generator "Unix Makefiles" \
-    --update \
-    --build
-  rm -rf "${ORT_DIST}"
-  mkdir -p "${ORT_DIST}/lib" "${ORT_DIST}/include"
-  cp build/MacOS/ReleaseShared/Release/libonnxruntime.dylib "${ORT_DIST}/lib/"
-  cp -R include/onnxruntime "${ORT_DIST}/include/"
-  install_name_tool -id '@rpath/libonnxruntime.dylib' \
-    "${ORT_DIST}/lib/libonnxruntime.dylib"
+  if [[ "${LUNAPI_ORT}" == 1 ]]; then
+    # ONNX Runtime: shared, CPU-only, with contrib/ML operators and telemetry off.
+    cd "${DEPS_DIR}"
+    rm -rf onnxruntime-src
+    git clone --branch "${ORT_REF}" --depth 1 \
+      https://github.com/microsoft/onnxruntime onnxruntime-src
+    cd onnxruntime-src
+    python3 tools/ci_build/build.py \
+      --build_dir build/MacOS/ReleaseShared \
+      --config Release \
+      --build_shared_lib \
+      --skip_tests \
+      --parallel 0 \
+      --disable_contrib_ops \
+      --disable_ml_ops \
+      --no_telemetry \
+      --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF \
+      --target onnxruntime \
+      --cmake_generator "Unix Makefiles" \
+      --update \
+      --build
+    rm -rf "${ORT_DIST}"
+    mkdir -p "${ORT_DIST}/lib" "${ORT_DIST}/include"
+    cp build/MacOS/ReleaseShared/Release/libonnxruntime.dylib "${ORT_DIST}/lib/"
+    cp -R include/onnxruntime "${ORT_DIST}/include/"
+    install_name_tool -id '@rpath/libonnxruntime.dylib' \
+      "${ORT_DIST}/lib/libonnxruntime.dylib"
+  fi
 fi
 
 # luna-base (built in all/luna modes)
@@ -229,9 +252,10 @@ git clone https://github.com/remnrem/luna-base.git
 cd luna-base
 make -j4 ARCH=MAC LGBM=1 LGBM_PATH=../LightGBM/ \
   CPPFLAGS="${CPPFLAGS:-} -I${DEPS_DIR}/include" \
-  ORT=1 ORT_PATH="${ORT_DIST}"
+  ORT="${LUNAPI_ORT}" ORT_PATH="${ORT_DIST}"
 cp libluna.a "${LUNA_LIB}"
 cp libluna.a "${DEPS_DIR}/libluna.a"
+echo "${LUNAPI_ORT}" > "${DEPS_DIR}/libluna-ort"
 
 save_cache_payload
 exit 0

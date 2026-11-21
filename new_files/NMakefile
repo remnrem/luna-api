@@ -34,6 +34,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      dsp/arousals2.cpp \
 	      dsp/combine_emg.cpp \
 	      dsp/plm.cpp \
+	      dsp/project.cpp \
 	      dsp/acf.cpp \
 	      dsp/armorf.cpp \
 	      dsp/arousals.cpp \
@@ -195,6 +196,7 @@ CPP_SOURCES = annot/annot-eval.cpp \
 	      spectral/mtm/mtm.cpp \
 	      spectral/mtm/spec-kurtosis.cpp \
 	      spectral/mt_spectrogram.cpp \
+	      spectral/psd-aperiodic.cpp \
 	      spectral/welch.cpp \
 	      spindles/coupling.cpp \
 	      spindles/mspindles.cpp \

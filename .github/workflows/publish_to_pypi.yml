@@ -19,8 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       DEPENDS_CACHE_DIR: ${{ github.workspace }}/depends-cache/${{ matrix.os }}
-      # v3 adds the macOS ONNX Runtime shared-library/header payload.
-      NATIVE_DEPS_CACHE_VERSION: v3
+      # v4 defaults macOS libluna to ORT disabled.
+      NATIVE_DEPS_CACHE_VERSION: v4
       # Important usage note:
       # 1. Run once with NATIVE_DEPS_MODE: all to seed full cache payload for the new structure.
       # 2. Then switch to NATIVE_DEPS_MODE: lunapi for fast runs.
@@ -29,8 +29,7 @@ jobs:
       # - all: rebuild FFTW + LightGBM + libluna, then build lunapi
       # - luna: reuse cached FFTW/LightGBM, rebuild libluna, then build lunapi
       # - lunapi: reuse cached FFTW/LightGBM/libluna, build lunapi only
-      # macOS additionally builds/restores the CPU-only ONNX Runtime shared
-      # library used by the SleepFM ORT command. Linux/Windows are unchanged.
+      # macOS ORT support is disabled by default. Linux/Windows are unchanged.
       NATIVE_DEPS_MODE: ${{ inputs.build_mode }}
     strategy:
       fail-fast: false

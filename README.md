@@ -112,6 +112,20 @@ Full documentation, command reference, and interactive notebooks are at [zzz.nys
 
 ---
 
+## Native macOS builds
+
+ONNX Runtime (ORT) support is disabled by default. The build skips ORT
+compilation, linking, and wheel bundling; ORT-dependent commands are unavailable.
+After switching from an ORT-enabled cache, rebuild Luna once:
+
+```bash
+NATIVE_DEPS_MODE=luna bash build-macos.sh
+pip install .
+```
+
+To enable ORT, use `LUNAPI_ORT=1` for both the native build and `pip install`.
+Use `NATIVE_DEPS_MODE=all` to build ORT if it is not already cached.
+
 ## Testing
 
 ```bash

@@ -26,16 +26,31 @@ include_directories("/usr/local/include/eigen3")
 include_directories("/opt/homebrew/include/eigen3")
 include_directories("${LUNAPI_DEPENDS_DIR}/include/" )
 
-# ONNX Runtime is kept dynamic for wheel distribution.  The native build
-# scripts stage it under depends/onnxruntime with lib/ and include/.
-set(ORT_ROOT "$ENV{GITHUB_WORKSPACE}/depends/onnxruntime")
-if("$ENV{GITHUB_WORKSPACE}" STREQUAL "" OR NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
-  set(ORT_ROOT "${CMAKE_SOURCE_DIR}/depends/onnxruntime")
+# Keep the wheel setting consistent with build-macos.sh.
+set(LUNAPI_ORT_DEFAULT OFF)
+if("$ENV{LUNAPI_ORT}" STREQUAL "1")
+  set(LUNAPI_ORT_DEFAULT ON)
 endif()
-if(NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
-  message(FATAL_ERROR "ONNX Runtime shared library not found at ${ORT_ROOT}/lib/libonnxruntime.dylib")
+option(LUNAPI_ORT "Enable ONNX Runtime support" ${LUNAPI_ORT_DEFAULT})
+if(EXISTS "${LUNAPI_DEPENDS_DIR}/libluna-ort")
+  file(STRINGS "${LUNAPI_DEPENDS_DIR}/libluna-ort" LUNA_BUILT_WITH_ORT)
+  if((LUNAPI_ORT AND NOT LUNA_BUILT_WITH_ORT) OR
+     (NOT LUNAPI_ORT AND LUNA_BUILT_WITH_ORT))
+    message(FATAL_ERROR "libluna ORT setting differs from LUNAPI_ORT; rebuild native dependencies with the matching setting")
+  endif()
 endif()
-include_directories("${ORT_ROOT}/include")
+if(LUNAPI_ORT)
+  # ONNX Runtime is kept dynamic for wheel distribution.  The native build
+  # scripts stage it under depends/onnxruntime with lib/ and include/.
+  set(ORT_ROOT "$ENV{GITHUB_WORKSPACE}/depends/onnxruntime")
+  if("$ENV{GITHUB_WORKSPACE}" STREQUAL "" OR NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
+    set(ORT_ROOT "${CMAKE_SOURCE_DIR}/depends/onnxruntime")
+  endif()
+  if(NOT EXISTS "${ORT_ROOT}/lib/libonnxruntime.dylib")
+    message(FATAL_ERROR "ONNX Runtime shared library not found at ${ORT_ROOT}/lib/libonnxruntime.dylib")
+  endif()
+  include_directories("${ORT_ROOT}/include")
+endif()
 
 link_directories("${LUNAPI_DEPENDS_DIR}/")
 link_directories("/usr/local/lib/")
@@ -43,23 +58,28 @@ link_directories("/usr/local/lib/")
 add_library( luna STATIC IMPORTED GLOBAL )
 add_library( lightgbm STATIC IMPORTED GLOBAL )
 add_library( fftw3 STATIC IMPORTED GLOBAL )
-add_library( onnxruntime SHARED IMPORTED GLOBAL )
 
 set_target_properties( luna      PROPERTIES IMPORTED_LOCATION  "${LUNAPI_DEPENDS_DIR}/libluna.a" )
 set_target_properties( lightgbm   PROPERTIES IMPORTED_LOCATION "${LUNAPI_DEPENDS_DIR}/lib_lightgbm.a" )
 set_target_properties( fftw3     PROPERTIES IMPORTED_LOCATION  "${LUNAPI_DEPENDS_DIR}/libfftw3.a" )
-set_target_properties( onnxruntime PROPERTIES
-  IMPORTED_LOCATION "${ORT_ROOT}/lib/libonnxruntime.dylib"
-  INTERFACE_INCLUDE_DIRECTORIES "${ORT_ROOT}/include"
-)
 
 pybind11_add_module( lunapi0 src/lunapi/lunapi0.cpp )
 
-target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm onnxruntime )
-set_target_properties( lunapi0 PROPERTIES
-  BUILD_RPATH "${ORT_ROOT}/lib"
-  INSTALL_RPATH "@loader_path"
-)
+target_link_libraries( lunapi0 PRIVATE fftw3 luna lightgbm )
+if(LUNAPI_ORT)
+  add_library(onnxruntime SHARED IMPORTED GLOBAL)
+  set_target_properties(onnxruntime PROPERTIES
+    IMPORTED_LOCATION "${ORT_ROOT}/lib/libonnxruntime.dylib"
+    INTERFACE_INCLUDE_DIRECTORIES "${ORT_ROOT}/include"
+  )
+  target_link_libraries(lunapi0 PRIVATE onnxruntime)
+  set_target_properties(lunapi0 PROPERTIES
+    BUILD_RPATH "${ORT_ROOT}/lib"
+    INSTALL_RPATH "@loader_path"
+  )
+endif()
 
 install(TARGETS lunapi0 LIBRARY DESTINATION lunapi )
-install(FILES "${ORT_ROOT}/lib/libonnxruntime.dylib" DESTINATION lunapi)
+if(LUNAPI_ORT)
+  install(FILES "${ORT_ROOT}/lib/libonnxruntime.dylib" DESTINATION lunapi)
+endif()
