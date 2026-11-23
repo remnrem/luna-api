@@ -33,9 +33,10 @@ from lunapi.parallel import coerce_strata as _coerce_strata
 import pandas as pd
 import numpy as np
 import os
+import re
 
 from .project import proj, _coerce_var_value
-from .resources import resources
+from .resources import resources, _pops_coda_args
 from .results import tables, cmdfile
 
 
@@ -1206,6 +1207,7 @@ class inst:
         yn = np.unique(y).size
 
         # winsorize power
+        from scipy.stats.mstats import winsorize
         z = winsorize( z , limits=[winsor, winsor] )
 
         zi, yi, xi = np.histogram2d(y, x, bins=(yn,xn), weights=z, density=False )
@@ -1215,7 +1217,6 @@ class inst:
 
         # do plot
 
-        from scipy.stats.mstats import winsorize
         import matplotlib.pyplot as plt
 
         if traces is True:
@@ -1256,7 +1257,8 @@ class inst:
              m = None , m1 = None , m2 = None ,
              lights_off = '.' , lights_on = '.' ,
              ignore_obs = False,
-             args = '' ):
+             args = '' ,
+             coda = True ):
         """Run the POPS automatic sleep stager on this individual.
 
         POPS (Population-based sleep staging) assigns sleep stages to each
@@ -1275,7 +1277,7 @@ class inst:
           Path to the POPS resource folder.  Defaults to
           ``resources.POPS_PATH``.
         lib : str, optional
-          POPS library name.  Defaults to ``resources.POPS_LIB`` (``'s2'``).
+          POPS library name.  Defaults to ``resources.POPS_LIB`` (``'s2a'``).
         do_edger : bool, optional
           Apply EDGER artifact detection.  Default ``True``.
         no_filter : bool, optional
@@ -1300,6 +1302,12 @@ class inst:
         args : str, optional
           Additional options to append to the ``POPS`` command.
           Default ``''``.
+        coda : bool, optional
+          Apply CODA, a second-stage model that refines POPS's epoch-level
+          posteriors using the surrounding epochs.  Default ``True``.  Needs
+          ``<path>/<lib>.coda30.mod`` (supplied for ``s2a``); if that is
+          missing, a warning is given and POPS runs without CODA.  CODA's
+          own settings (e.g. its context window) come from the model file.
 
         Returns
         -------
@@ -1369,8 +1377,14 @@ class inst:
             args = args + ' ignore-obs-staging';
             if do_edger is True:
                 cmdstr = cmdstr.replace( 'EDGER' , 'EDGER all' )
+        # CODA (on by default; needs <lib>.coda30.mod in the POPS folder)
+        coda_opts = _pops_coda_args( path, lib, coda )
+        if coda_opts != '': args = ( args + ' ' + coda_opts ).strip()
         if args != '':
-            cmdstr = cmdstr.replace( 'POPS' , 'POPS ' + args + ' ')
+            # add the options to the POPS command line only (not to comments)
+            cmdstr = re.sub( r'(?m)^(\s*)POPS\b' ,
+                             lambda x: x.group(1) + 'POPS ' + args + ' ' ,
+                             cmdstr , count = 1 )
 
 
         # run the command

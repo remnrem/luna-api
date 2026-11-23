@@ -25,6 +25,9 @@ Exports Docker-oriented model/resource defaults and package/backend version
 introspection helpers.
 """
 
+import os
+import warnings
+
 from . import __version__
 
 
@@ -33,14 +36,32 @@ class resources:
 
    Notes
    -----
-   These paths are primarily intended for containerized environments where
-   POPS/model resources are mounted in known locations.
+   These paths match the ``remnrem/luna`` Docker image, which unpacks the
+   luna-resources bundle (https://github.com/remnrem/luna-resources) to
+   ``/build/luna-resources/``.  Elsewhere, point them at a downloaded copy,
+   e.g. ``lp.resources.POPS_PATH = '/path/to/luna-resources/pops/'``.
    """
-   POPS_PATH = '/build/nsrr/common/resources/pops/'
-   POPS_LIB = 's2'
-   MODEL_PATH = '/build/luna-models/'
+   POPS_PATH = '/build/luna-resources/pops/'
+   POPS_LIB = 's2a'
+   MODEL_PATH = '/build/luna-resources/predict/'
 
 lp_version = __version__
+
+
+def _pops_coda_args( path, lib, coda ):
+   """POPS options for CODA, as used by ``inst.pops()`` and ``proj.pops()``.
+
+   CODA needs the model ``<path>/<lib>.coda30.mod``.  If it is missing, warn
+   and return no options, so POPS runs without CODA.
+   """
+   if not coda: return ''
+   cfile = os.path.join( path, lib + '.coda30.mod' )
+   if not os.path.isfile( cfile ):
+      warnings.warn( f'POPS: no CODA model for lib={lib} ({cfile}); '
+                     'running without CODA (set coda=False to silence this)',
+                     stacklevel = 3 )
+      return ''
+   return 'coda'
 
 
 def version():
